@@ -7,6 +7,26 @@
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+// Add this to your existing dashboard script
+function handleLogout() {
+    if (confirm('Are you sure you want to logout?')) {
+        localStorage.clear();
+        showNotification('Logged out successfully', 'success');
+        setTimeout(() => {
+            window.location.href = '/';
+        }, 500);
+    }
+}
+
+// Make sure the logout button works
+document.addEventListener('DOMContentLoaded', () => {
+    const logoutBtn = document.getElementById('logoutBtn');
+    if (logoutBtn) {
+        logoutBtn.addEventListener('click', handleLogout);
+    }
+});
+</script>
 </head>
 <body>
     <!-- Loading Screen -->
