@@ -2,40 +2,17 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>💧 AquaTrack - Dashboard</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AquaTrack - Dashboard</title>
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script>
-// Add this to your existing dashboard script
-function handleLogout() {
-    if (confirm('Are you sure you want to logout?')) {
-        localStorage.clear();
-        showNotification('Logged out successfully', 'success');
-        setTimeout(() => {
-            window.location.href = '/';
-        }, 500);
-    }
-}
-
-// Make sure the logout button works
-document.addEventListener('DOMContentLoaded', () => {
-    const logoutBtn = document.getElementById('logoutBtn');
-    if (logoutBtn) {
-        logoutBtn.addEventListener('click', handleLogout);
-    }
-});
-</script>
 </head>
 <body>
-    <!-- Loading Screen -->
     <div class="loading-screen" id="loadingScreen">
         <div class="loading-content">
             <div class="water-drop-animation">
-                <div class="ripple"></div>
-                <div class="ripple"></div>
-                <div class="ripple"></div>
+                <div class="ripple"></div><div class="ripple"></div><div class="ripple"></div>
                 <i class="fas fa-tint"></i>
             </div>
             <h1>AquaTrack</h1>
@@ -43,414 +20,103 @@ document.addEventListener('DOMContentLoaded', () => {
         </div>
     </div>
 
-    <!-- Main App -->
-    <div class="app-container" id="appContainer">
-        <!-- Background Effects -->
+    <div class="app-container">
         <div class="bg-gradient"></div>
         <div class="water-waves"></div>
-        
-        <!-- Header -->
+
         <header class="header glass-effect">
             <div class="header-content">
-                <div class="logo">
-                    <div class="logo-icon">
-                        <i class="fas fa-tint"></i>
-                    </div>
-                    <h1>AquaTrack</h1>
-                </div>
+                <div class="logo"><div class="logo-icon"><i class="fas fa-tint"></i></div><h1>AquaTrack</h1></div>
                 <div class="header-info">
                     <div class="date" id="currentDate"></div>
-                    <button class="theme-toggle" id="themeToggle">
-                        <i class="fas fa-moon"></i>
-                    </button>
-                    <div class="user-menu">
-                        <span id="userName" class="user-name"></span>
-                        <button class="logout-btn" onclick="handleLogout()">
-                            <i class="fas fa-sign-out-alt"></i>
-                        </button>
-                    </div>
+                    <button class="theme-toggle" id="themeToggle"><i class="fas fa-moon"></i></button>
+                    <div class="user-menu"><span id="userName" class="user-name"></span><button class="logout-btn" id="logoutBtn"><i class="fas fa-sign-out-alt"></i></button></div>
                 </div>
             </div>
         </header>
 
-        <!-- Navigation -->
         <nav class="navigation glass-effect">
-            <button class="nav-btn active" data-page="dashboard">
-                <i class="fas fa-home"></i>
-                <span>Dashboard</span>
-            </button>
-            <button class="nav-btn" data-page="add-water">
-                <i class="fas fa-plus-circle"></i>
-                <span>Add Water</span>
-            </button>
-            <button class="nav-btn" data-page="analytics">
-                <i class="fas fa-chart-line"></i>
-                <span>Analytics</span>
-            </button>
-            <button class="nav-btn" data-page="settings">
-                <i class="fas fa-cog"></i>
-                <span>Settings</span>
-            </button>
+            <button class="nav-btn active" data-page="dashboard"><i class="fas fa-home"></i><span>Dashboard</span></button>
+            <button class="nav-btn" data-page="add-water"><i class="fas fa-plus-circle"></i><span>Add Water</span></button>
+            <button class="nav-btn" data-page="analytics"><i class="fas fa-chart-line"></i><span>Analytics</span></button>
+            <button class="nav-btn" data-page="settings"><i class="fas fa-cog"></i><span>Settings</span></button>
         </nav>
 
-        <!-- Main Content -->
         <main class="main-content">
             <!-- Dashboard Page -->
             <section id="dashboard" class="page active">
-                <!-- Stats Cards -->
                 <div class="stats-grid">
-                    <div class="stat-card glass-effect">
-                        <div class="stat-icon" style="background: linear-gradient(135deg, #0ea5e9, #0284c7);">
-                            <i class="fas fa-tint"></i>
-                        </div>
-                        <div class="stat-info">
-                            <h3 id="todayTotal">0 ml</h3>
-                            <p>Today's Consumption</p>
-                        </div>
-                    </div>
-                    
-                    <div class="stat-card glass-effect">
-                        <div class="stat-icon" style="background: linear-gradient(135deg, #10b981, #059669);">
-                            <i class="fas fa-bullseye"></i>
-                        </div>
-                        <div class="stat-info">
-                            <h3 id="dailyGoal">2000 ml</h3>
-                            <p>Daily Goal</p>
-                        </div>
-                    </div>
-                    
-                    <div class="stat-card glass-effect">
-                        <div class="stat-icon" style="background: linear-gradient(135deg, #f59e0b, #d97706);">
-                            <i class="fas fa-chart-line"></i>
-                        </div>
-                        <div class="stat-info">
-                            <h3 id="progressPercent">0%</h3>
-                            <p>Progress</p>
-                        </div>
-                    </div>
+                    <div class="stat-card glass-effect"><div class="stat-icon" style="background: linear-gradient(135deg, #0ea5e9, #0284c7);"><i class="fas fa-tint"></i></div><div class="stat-info"><h3 id="todayTotal">0 ml</h3><p>Today's Consumption</p></div></div>
+                    <div class="stat-card glass-effect"><div class="stat-icon" style="background: linear-gradient(135deg, #10b981, #059669);"><i class="fas fa-bullseye"></i></div><div class="stat-info"><h3 id="dailyGoal">2000 ml</h3><p>Daily Goal</p></div></div>
+                    <div class="stat-card glass-effect"><div class="stat-icon" style="background: linear-gradient(135deg, #f59e0b, #d97706);"><i class="fas fa-chart-line"></i></div><div class="stat-info"><h3 id="progressPercent">0%</h3><p>Progress</p></div></div>
                 </div>
 
-                <!-- Progress Section -->
                 <div class="progress-section glass-effect">
                     <h2><i class="fas fa-chart-bar"></i> Today's Progress</h2>
-                    <div class="progress-container">
-                        <div class="progress-bar">
-                            <div class="progress-fill" id="progressFill"></div>
-                        </div>
-                        <div class="progress-labels">
-                            <span>0 ml</span>
-                            <span id="currentAmount">0 ml</span>
-                            <span id="goalAmount">2000 ml</span>
-                        </div>
-                    </div>
+                    <div class="progress-container"><div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div><div class="progress-labels"><span>0 ml</span><span id="currentAmount">0 ml</span><span id="goalAmount">2000 ml</span></div></div>
                 </div>
 
-                <!-- Quick Actions -->
                 <div class="quick-actions glass-effect">
                     <h2><i class="fas fa-bolt"></i> Quick Add</h2>
                     <div class="quick-buttons">
-                        <button class="quick-btn" data-amount="250">
-                            <i class="fas fa-glass-water"></i>
-                            <span>250 ml</span>
-                            <small>Small Glass</small>
-                        </button>
-                        <button class="quick-btn" data-amount="500">
-                            <i class="fas fa-wine-bottle"></i>
-                            <span>500 ml</span>
-                            <small>Bottle</small>
-                        </button>
-                        <button class="quick-btn" data-amount="750">
-                            <i class="fas fa-beer-mug-empty"></i>
-                            <span>750 ml</span>
-                            <small>Large Bottle</small>
-                        </button>
-                        <button class="quick-btn" data-amount="1000">
-                            <i class="fas fa-wine-glass"></i>
-                            <span>1000 ml</span>
-                            <small>Liter</small>
-                        </button>
+                        <button class="quick-btn" data-amount="250"><i class="fas fa-glass-water"></i><span>250 ml</span><small>Small Glass</small></button>
+                        <button class="quick-btn" data-amount="500"><i class="fas fa-wine-bottle"></i><span>500 ml</span><small>Bottle</small></button>
+                        <button class="quick-btn" data-amount="750"><i class="fas fa-beer-mug-empty"></i><span>750 ml</span><small>Large Bottle</small></button>
+                        <button class="quick-btn" data-amount="1000"><i class="fas fa-wine-glass"></i><span>1000 ml</span><small>Liter</small></button>
                     </div>
                 </div>
 
-                <!-- Charts Section -->
                 <div class="charts-section">
-                    <div class="chart-container glass-effect">
-                        <h3><i class="fas fa-chart-pie"></i> Today's Breakdown</h3>
-                        <canvas id="pieChart"></canvas>
-                    </div>
-                    <div class="chart-container glass-effect">
-                        <h3><i class="fas fa-chart-line"></i> Weekly Trend</h3>
-                        <canvas id="lineChart"></canvas>
-                    </div>
+                    <div class="chart-container glass-effect"><h3><i class="fas fa-chart-pie"></i> Today's Breakdown</h3><canvas id="pieChart"></canvas></div>
+                    <div class="chart-container glass-effect"><h3><i class="fas fa-chart-line"></i> Weekly Trend</h3><canvas id="lineChart"></canvas></div>
                 </div>
 
-                <!-- Recent Entries -->
-                <div class="recent-entries glass-effect">
-                    <h2><i class="fas fa-history"></i> Recent Activity</h2>
-                    <div class="entries-list" id="entriesList"></div>
-                </div>
+                <div class="recent-entries glass-effect"><h2><i class="fas fa-history"></i> Recent Activity</h2><div class="entries-list" id="entriesList"></div></div>
             </section>
 
             <!-- Add Water Page -->
             <section id="add-water" class="page">
                 <div class="add-water-container">
                     <h2><i class="fas fa-plus-circle"></i> Add Water Entry</h2>
-                    
-                    <div class="input-group-glass">
-                        <label><i class="fas fa-ruler-vertical"></i> Amount (ml)</label>
-                        <div class="amount-input">
-                            <input type="range" id="amountSlider" min="50" max="2000" value="500" step="50">
-                            <div class="slider-labels">
-                                <span>50 ml</span>
-                                <span id="amountDisplay">500 ml</span>
-                                <span>2000 ml</span>
-                            </div>
-                        </div>
-                        <div class="preset-buttons">
-                            <button class="preset-btn" data-amount="250">250 ml</button>
-                            <button class="preset-btn" data-amount="500">500 ml</button>
-                            <button class="preset-btn" data-amount="750">750 ml</button>
-                            <button class="preset-btn" data-amount="1000">1000 ml</button>
-                        </div>
+                    <div class="input-group-glass"><label><i class="fas fa-ruler-vertical"></i> Amount (ml)</label>
+                        <div class="amount-input"><input type="range" id="amountSlider" min="50" max="2000" value="500" step="50"><div class="slider-labels"><span>50 ml</span><span id="amountDisplay">500 ml</span><span>2000 ml</span></div></div>
+                        <div class="preset-buttons"><button class="preset-btn" data-amount="250">250 ml</button><button class="preset-btn" data-amount="500">500 ml</button><button class="preset-btn" data-amount="750">750 ml</button><button class="preset-btn" data-amount="1000">1000 ml</button></div>
                     </div>
-
-                    <div class="input-group-glass">
-                        <label><i class="fas fa-tag"></i> Purpose</label>
-                        <select id="purposeSelect">
-                            <option value="drinking">💧 Drinking</option>
-                            <option value="cooking">👨‍🍳 Cooking</option>
-                            <option value="bathing">🚿 Bathing</option>
-                            <option value="washing">🍽️ Washing</option>
-                            <option value="gardening">🌿 Gardening</option>
-                        </select>
-                    </div>
-
-                    <div class="input-group-glass">
-                        <label><i class="fas fa-clock"></i> Time</label>
-                        <input type="time" id="timeInput">
-                        <button type="button" class="btn-now" onclick="setCurrentTime()">
-                            <i class="fas fa-history"></i> Set to Now
-                        </button>
-                    </div>
-
-                    <div class="input-group-glass">
-                        <label><i class="fas fa-sticky-note"></i> Notes</label>
-                        <textarea id="notesInput" placeholder="Add any notes..."></textarea>
-                    </div>
-
-                    <button class="btn-primary" onclick="addWaterEntry()">
-                        <i class="fas fa-plus"></i> Add Water Entry
-                    </button>
-
-                    <div class="preview-card glass-effect">
-                        <h3><i class="fas fa-eye"></i> Preview</h3>
-                        <div class="preview-content">
-                            <div class="preview-item">
-                                <span>Amount:</span>
-                                <strong id="previewAmount">500 ml</strong>
-                            </div>
-                            <div class="preview-item">
-                                <span>Purpose:</span>
-                                <strong id="previewPurpose">Drinking</strong>
-                            </div>
-                            <div class="preview-item">
-                                <span>Time:</span>
-                                <strong id="previewTime">Now</strong>
-                            </div>
-                        </div>
-                    </div>
+                    <div class="input-group-glass"><label><i class="fas fa-tag"></i> Purpose</label><select id="purposeSelect"><option value="drinking">💧 Drinking</option><option value="cooking">👨‍🍳 Cooking</option><option value="bathing">🚿 Bathing</option><option value="washing">🍽️ Washing</option><option value="gardening">🌿 Gardening</option></select></div>
+                    <div class="input-group-glass"><label><i class="fas fa-clock"></i> Time</label><input type="time" id="timeInput"><button type="button" class="btn-now" onclick="setCurrentTime()"><i class="fas fa-history"></i> Set to Now</button></div>
+                    <div class="input-group-glass"><label><i class="fas fa-sticky-note"></i> Notes</label><textarea id="notesInput" placeholder="Add any notes..."></textarea></div>
+                    <button class="btn-primary" id="addWaterBtn"><i class="fas fa-plus"></i> Add Water Entry</button>
+                    <div class="preview-card glass-effect"><h3><i class="fas fa-eye"></i> Preview</h3><div class="preview-content"><div class="preview-item"><span>Amount:</span><strong id="previewAmount">500 ml</strong></div><div class="preview-item"><span>Purpose:</span><strong id="previewPurpose">Drinking</strong></div><div class="preview-item"><span>Time:</span><strong id="previewTime">Now</strong></div></div></div>
                 </div>
             </section>
 
             <!-- Analytics Page -->
             <section id="analytics" class="page">
-                <div class="analytics-container">
-                    <h2><i class="fas fa-chart-line"></i> Analytics</h2>
-                    
-                    <div class="analytics-controls glass-effect">
-                        <select id="periodSelect">
-                            <option value="7">Last 7 Days</option>
-                            <option value="30">Last 30 Days</option>
-                            <option value="90">Last 90 Days</option>
-                        </select>
-                        <button class="btn-secondary" onclick="refreshAnalytics()">
-                            <i class="fas fa-sync-alt"></i> Refresh
-                        </button>
-                    </div>
-
-                    <div class="analytics-stats">
-                        <div class="analytic-card glass-effect">
-                            <h3>Average Daily</h3>
-                            <p class="stat-value" id="avgDaily">0 ml</p>
-                        </div>
-                        <div class="analytic-card glass-effect">
-                            <h3>Total Tracked</h3>
-                            <p class="stat-value" id="totalTracked">0 L</p>
-                        </div>
-                        <div class="analytic-card glass-effect">
-                            <h3>Goal Days</h3>
-                            <p class="stat-value" id="goalDays">0</p>
-                        </div>
-                        <div class="analytic-card glass-effect">
-                            <h3>Water Saved</h3>
-                            <p class="stat-value" id="waterSaved">0 L</p>
-                        </div>
-                    </div>
-
-                    <div class="analytics-charts">
-                        <div class="chart-container glass-effect">
-                            <h3>Consumption Trend</h3>
-                            <canvas id="analyticsChart"></canvas>
-                        </div>
-                        <div class="chart-container glass-effect">
-                            <h3>Usage Distribution</h3>
-                            <canvas id="distributionChart"></canvas>
-                        </div>
-                    </div>
+                <div class="analytics-container"><h2><i class="fas fa-chart-line"></i> Analytics</h2>
+                    <div class="analytics-controls glass-effect"><select id="periodSelect"><option value="7">Last 7 Days</option><option value="30">Last 30 Days</option><option value="90">Last 90 Days</option></select><button class="btn-secondary" onclick="refreshAnalytics()"><i class="fas fa-sync-alt"></i> Refresh</button></div>
+                    <div class="analytics-stats"><div class="analytic-card glass-effect"><h3>Average Daily</h3><p class="stat-value" id="avgDaily">0 ml</p></div><div class="analytic-card glass-effect"><h3>Total Tracked</h3><p class="stat-value" id="totalTracked">0 L</p></div><div class="analytic-card glass-effect"><h3>Goal Days</h3><p class="stat-value" id="goalDays">0</p></div><div class="analytic-card glass-effect"><h3>Water Saved</h3><p class="stat-value" id="waterSaved">0 L</p></div></div>
+                    <div class="analytics-charts"><div class="chart-container glass-effect"><h3>Consumption Trend</h3><canvas id="analyticsChart"></canvas></div><div class="chart-container glass-effect"><h3>Usage Distribution</h3><canvas id="distributionChart"></canvas></div></div>
                 </div>
             </section>
 
-         <!-- Settings Page - COMPLETE FIXED VERSION -->
-<section id="settings" class="page">
-    <div class="settings-container">
-        <h2><i class="fas fa-cog"></i> Settings</h2>
-        
-        <!-- Daily Goal Settings - IMPROVED -->
-        <div class="setting-group glass-effect">
-            <h3><i class="fas fa-bullseye"></i> Daily Water Goal</h3>
-            <div class="setting-item">
-                <label class="setting-label">Your Daily Hydration Target</label>
-                <div class="goal-input-container">
-                    <!-- Visual Slider -->
-                    <div class="goal-slider-wrapper">
-                        <div class="slider-value-display">
-                            <span id="goalValueDisplay" class="goal-value-large">2000</span>
-                            <span class="goal-unit-large">ml</span>
-                        </div>
-                        <input type="range" id="dailyGoalSlider" class="goal-slider" min="500" max="5000" step="100" value="2000">
-                        <div class="slider-markers">
-                            <span>500ml</span>
-                            <span>2000ml</span>
-                            <span>3500ml</span>
-                            <span>5000ml</span>
-                        </div>
-                    </div>
+            <!-- Settings Page -->
+            <section id="settings" class="page">
+                <div class="settings-container"><h2><i class="fas fa-cog"></i> Settings</h2>
+                    <div class="setting-group glass-effect"><h3><i class="fas fa-bullseye"></i> Daily Water Goal</h3><div class="setting-item"><div class="goal-input-container"><div class="goal-slider-wrapper"><div class="slider-value-display"><span id="goalValueDisplay" class="goal-value-large">2000</span><span class="goal-unit-large">ml</span></div><input type="range" id="dailyGoalSlider" class="goal-slider" min="500" max="5000" step="100" value="2000"><div class="slider-markers"><span>500ml</span><span>2000ml</span><span>3500ml</span><span>5000ml</span></div></div><div class="goal-number-input"><div class="input-with-buttons"><button class="number-btn" onclick="adjustGoal(-100)">-</button><input type="number" id="dailyGoalInput" class="goal-number-field" min="500" max="5000" step="100" value="2000"><button class="number-btn" onclick="adjustGoal(100)">+</button></div><button class="btn-save-goal" id="saveGoalBtn" onclick="saveDailyGoal()"><i class="fas fa-save"></i> Update Goal</button></div><div class="goal-info-card"><i class="fas fa-info-circle"></i><div class="goal-info-text"><strong>Recommended intake:</strong> 2000-3000 ml (2-3 liters) per day</div></div></div></div></div>
                     
-                    <!-- Number Input -->
-                    <div class="goal-number-input">
-                        <div class="input-with-buttons">
-                            <button class="number-btn" onclick="adjustGoal(-100)">-</button>
-                            <input type="number" id="dailyGoalInput" class="goal-number-field" min="500" max="5000" step="100" value="2000">
-                            <button class="number-btn" onclick="adjustGoal(100)">+</button>
-                        </div>
-                        <button class="btn-save-goal" id="saveGoalBtn" onclick="saveDailyGoal()">
-                            <i class="fas fa-save"></i> Update Goal
-                        </button>
-                    </div>
+                    <div class="setting-group glass-effect"><h3><i class="fas fa-bell"></i> Notifications</h3><div class="notification-card"><div class="notification-header"><div class="notification-info"><i class="fas fa-bell"></i><div><strong>Daily Reminders</strong><p>Get notified to track your water consumption</p></div></div><label class="toggle-switch-modern"><input type="checkbox" id="notificationsToggle"><span class="toggle-slider-modern"></span></label></div><div id="reminderTimeContainer" class="reminder-time-container" style="display: none;"><div class="time-picker-wrapper"><i class="fas fa-clock"></i><input type="time" id="reminderTime" class="time-picker"><button class="btn-test" onclick="testNotification()"><i class="fas fa-bell"></i> Test</button></div><div class="reminder-info"><i class="fas fa-info-circle"></i><small>You'll receive a daily reminder at this time</small></div></div></div></div>
                     
-                    <div class="goal-info-card">
-                        <i class="fas fa-info-circle"></i>
-                        <div class="goal-info-text">
-                            <strong>Recommended intake:</strong> 2000-3000 ml (2-3 liters) per day
-                        </div>
-                    </div>
+                    <div class="setting-group glass-effect"><h3><i class="fas fa-palette"></i> Appearance</h3><div class="theme-selector"><button class="theme-option active" data-theme="light" onclick="setTheme('light')"><i class="fas fa-sun"></i><span>Light Mode</span></button><button class="theme-option" data-theme="dark" onclick="setTheme('dark')"><i class="fas fa-moon"></i><span>Dark Mode</span></button></div></div>
+                    
+                    <div class="setting-group glass-effect"><h3><i class="fas fa-database"></i> Data Management</h3><div class="data-actions-grid"><button class="action-btn export-btn" onclick="exportData()"><i class="fas fa-download"></i><span>Export CSV</span></button><button class="action-btn delete-btn" onclick="clearAllData()"><i class="fas fa-trash-alt"></i><span>Delete All Data</span></button></div></div>
+                    
+                    <div class="setting-group glass-effect"><h3><i class="fas fa-info-circle"></i> About</h3><div class="app-info-card"><div class="app-logo-small"><i class="fas fa-tint"></i></div><div class="app-details"><h4>AquaTrack</h4><p>Smart Water Tracker - Version 2.0</p><p>Track, analyze, and reduce your daily water consumption.</p><div class="app-badge"><i class="fas fa-heart"></i><span>Made with care for a sustainable future</span></div></div></div></div>
                 </div>
-            </div>
-        </div>
-
-        <!-- Notifications Settings - FIXED LAYOUT -->
-        <div class="setting-group glass-effect">
-            <h3><i class="fas fa-bell"></i> Notifications</h3>
-            <div class="notification-card">
-                <div class="notification-header">
-                    <div class="notification-info">
-                        <i class="fas fa-bell"></i>
-                        <div>
-                            <strong>Daily Reminders</strong>
-                            <p>Get notified to track your water consumption</p>
-                        </div>
-                    </div>
-                    <label class="toggle-switch-modern">
-                        <input type="checkbox" id="notificationsToggle">
-                        <span class="toggle-slider-modern"></span>
-                    </label>
-                </div>
-                
-                <div id="reminderTimeContainer" class="reminder-time-container" style="display: none;">
-                    <div class="time-picker-wrapper">
-                        <i class="fas fa-clock"></i>
-                        <input type="time" id="reminderTime" class="time-picker">
-                        <button class="btn-test" onclick="testNotification()">
-                            <i class="fas fa-bell"></i> Test
-                        </button>
-                    </div>
-                    <div class="reminder-info">
-                        <i class="fas fa-info-circle"></i>
-                        <small>You'll receive a daily reminder at this time</small>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Appearance Settings -->
-        <div class="setting-group glass-effect">
-            <h3><i class="fas fa-palette"></i> Appearance</h3>
-            <div class="theme-selector">
-                <button class="theme-option active" data-theme="light" onclick="setTheme('light')">
-                    <i class="fas fa-sun"></i>
-                    <span>Light Mode</span>
-                </button>
-                <button class="theme-option" data-theme="dark" onclick="setTheme('dark')">
-                    <i class="fas fa-moon"></i>
-                    <span>Dark Mode</span>
-                </button>
-            </div>
-        </div>
-
-        <!-- Data Management -->
-        <div class="setting-group glass-effect">
-            <h3><i class="fas fa-database"></i> Data Management</h3>
-            <div class="data-actions-grid">
-                <button class="action-btn export-btn" onclick="exportData()">
-                    <i class="fas fa-download"></i>
-                    <span>Export CSV</span>
-                </button>
-                <button class="action-btn delete-btn" onclick="clearAllData()">
-                    <i class="fas fa-trash-alt"></i>
-                    <span>Delete All Data</span>
-                </button>
-            </div>
-        </div>
-
-        <!-- App Info -->
-        <div class="setting-group glass-effect">
-            <h3><i class="fas fa-info-circle"></i> About</h3>
-            <div class="app-info-card">
-                <div class="app-logo-small">
-                    <i class="fas fa-tint"></i>
-                </div>
-                <div class="app-details">
-                    <h4>AquaTrack</h4>
-                    <p>Smart Water Tracker - Version 2.0</p>
-                    <p>Track, analyze, and reduce your daily water consumption.</p>
-                    <div class="app-badge">
-                        <i class="fas fa-heart"></i>
-                        <span>Made with care for a sustainable future</span>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</section>
+            </section>
         </main>
 
-        <!-- Notification Area -->
         <div id="notificationArea" class="notification-area"></div>
-
-        <!-- Floating Add Button -->
-        <button class="floating-btn glass-effect" id="floatingAddBtn">
-            <i class="fas fa-plus"></i>
-        </button>
+        <button class="floating-btn glass-effect" id="floatingAddBtn"><i class="fas fa-plus"></i></button>
     </div>
 
     <script src="script.js"></script>
