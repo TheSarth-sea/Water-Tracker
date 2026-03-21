@@ -207,14 +207,229 @@ async function clearAllData() {
     showNotification('All data cleared', 'success');
 }
 
-function refreshAnalytics() {
-    const totalMl = waterEntries.reduce((s, e) => s + e.amount, 0) * 1000;
-    const avgDaily = totalMl / 7;
-    document.getElementById('avgDaily').innerText = `${Math.round(avgDaily)} ml`;
-    document.getElementById('totalTracked').innerText = `${(totalMl / 1000).toFixed(1)} L`;
-    const goalDays = waterEntries.filter(e => e.amount >= (currentUser?.dailyLimit || 2)).length;
-    document.getElementById('goalDays').innerText = goalDays;
-    document.getElementById('waterSaved').innerText = `${(waterEntries.reduce((s, e) => s + Math.max(0, (currentUser?.dailyLimit || 2) - e.amount), 0)).toFixed(1)} L`;
+// ===== COMPLETE ANALYTICS FUNCTION =====
+async function refreshAnalytics() {
+    const period = parseInt(document.getElementById('periodSelect')?.value || 7);
+    const now = new Date();
+    const startDate = new Date(now);
+    startDate.setDate(now.getDate() - period);
+    
+    // Filter entries for the selected period
+    const filteredEntries = waterEntries.filter(entry => {
+        const entryDate = new Date(entry.date);
+        return entryDate >= startDate;
+    });
+    
+    // Calculate statistics
+    const totalMl = filteredEntries.reduce((sum, e) => sum + e.amount, 0) * 1000;
+    const avgDaily = totalMl / period;
+    const goalDays = filteredEntries.filter(e => e.amount >= (currentUser?.dailyLimit || 2)).length;
+    const waterSaved = filteredEntries.reduce((sum, e) => sum + Math.max(0, (currentUser?.dailyLimit || 2) - e.amount), 0) * 1000;
+    
+    // Update stats display
+    document.getElementById('avgDaily').innerHTML = `${Math.round(avgDaily).toLocaleString()} ml`;
+    document.getElementById('totalTracked').innerHTML = `${(totalMl / 1000).toFixed(1)} L`;
+    document.getElementById('goalDays').innerHTML = goalDays;
+    document.getElementById('waterSaved').innerHTML = `${(waterSaved / 1000).toFixed(1)} L`;
+    
+    // Prepare data for trend chart
+    const dailyData = [];
+    const labels = [];
+    for (let i = period - 1; i >= 0; i--) {
+        const date = new Date(now);
+        date.setDate(now.getDate() - i);
+        const dateStr = date.toISOString().split('T')[0];
+        const dayTotal = filteredEntries
+            .filter(e => e.date.split('T')[0] === dateStr)
+            .reduce((sum, e) => sum + e.amount, 0) * 1000;
+        
+        dailyData.push(dayTotal);
+        labels.push(date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }));
+    }
+    
+    // Create or update trend chart
+    const trendCtx = document.getElementById('analyticsChart')?.getContext('2d');
+    if (trendCtx) {
+        if (charts.analyticsChart) charts.analyticsChart.destroy();
+        charts.analyticsChart = new Chart(trendCtx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Water Consumption',
+                    data: dailyData,
+                    borderColor: '#0a84ff',
+                    backgroundColor: 'rgba(10, 132, 255, 0.1)',
+                    borderWidth: 3,
+                    pointBackgroundColor: '#0a84ff',
+                    pointBorderColor: 'white',
+                    pointBorderWidth: 2,
+                    pointRadius: 6,
+                    pointHoverRadius: 8,
+                    tension: 0.3,
+                    fill: true
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return `${context.raw.toFixed(0)} ml`;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        grid: {
+                            color: 'rgba(255, 255, 255, 0.1)'
+                        },
+                        ticks: {
+                            color: 'rgba(255, 255, 255, 0.7)',
+                            callback: function(value) {
+                                return value + ' ml';
+                            }
+                        },
+                        title: {
+                            display: true,
+                            text: 'Water (ml)',
+                            color: 'rgba(255, 255, 255, 0.7)'
+                        }
+                    },
+                    x: {
+                        grid: {
+                            display: false
+                        },
+                        ticks: {
+                            color: 'rgba(255, 255, 255, 0.7)',
+                            maxRotation: 45,
+                            minRotation: 45
+                        }
+                    }
+                }
+            }
+        });
+    }
+    
+    // Prepare data for distribution chart
+    const purposes = {};
+    filteredEntries.forEach(entry => {
+        const purpose = entry.notes || 'Drinking';
+        purposes[purpose] = (purposes[purpose] || 0) + entry.amount * 1000;
+    });
+    
+    const purposeLabels = Object.keys(purposes);
+    const purposeData = Object.values(purposes);
+    
+    // Find top purpose
+    let topPurpose = 'No data';
+    if (purposeLabels.length > 0) {
+        const maxIndex = purposeData.indexOf(Math.max(...purposeData));
+        topPurpose = purposeLabels[maxIndex];
+    }
+    document.getElementById('topPurpose').innerHTML = topPurpose;
+    
+    // Create or update distribution chart
+    const distCtx = document.getElementById('distributionChart')?.getContext('2d');
+    if (distCtx) {
+        if (charts.distributionChart) charts.distributionChart.destroy();
+        charts.distributionChart = new Chart(distCtx, {
+            type: 'doughnut',
+            data: {
+                labels: purposeLabels.length ? purposeLabels : ['No Data'],
+                datasets: [{
+                    data: purposeData.length ? purposeData : [1],
+                    backgroundColor: ['#0a84ff', '#30d158', '#ff9f0a', '#ff453a', '#5e5ce6', '#bf5af2'],
+                    borderWidth: 0,
+                    hoverOffset: 15
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: {
+                            color: 'rgba(255, 255, 255, 0.8)',
+                            font: { size: 12 },
+                            padding: 15
+                        }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                const percentage = ((context.raw / total) * 100).toFixed(1);
+                                return `${context.label}: ${context.raw.toFixed(0)} ml (${percentage}%)`;
+                            }
+                        }
+                    }
+                },
+                cutout: '60%'
+            }
+        });
+    }
+    
+    // Update weekly breakdown
+    updateWeeklyBreakdown(filteredEntries, period);
+    
+    // Update trend insight
+    const trendInsight = document.getElementById('trendInsight');
+    if (trendInsight) {
+        const lastWeekAvg = dailyData.slice(-7).reduce((a, b) => a + b, 0) / 7;
+        const previousWeekAvg = dailyData.slice(-14, -7).reduce((a, b) => a + b, 0) / 7;
+        if (lastWeekAvg > previousWeekAvg) {
+            trendInsight.innerHTML = `📈 Your water consumption has increased by ${((lastWeekAvg - previousWeekAvg) / previousWeekAvg * 100).toFixed(1)}% compared to last week`;
+        } else if (lastWeekAvg < previousWeekAvg) {
+            trendInsight.innerHTML = `📉 Great job! Your water consumption has decreased by ${((previousWeekAvg - lastWeekAvg) / previousWeekAvg * 100).toFixed(1)}% compared to last week`;
+        } else {
+            trendInsight.innerHTML = `📊 Your water consumption is consistent with last week. Keep it up!`;
+        }
+    }
+}
+
+// ===== WEEKLY BREAKDOWN FUNCTION =====
+function updateWeeklyBreakdown(entries, period) {
+    const breakdownBody = document.querySelector('.breakdown-body');
+    if (!breakdownBody) return;
+    
+    const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    const weeklyData = {};
+    days.forEach(day => weeklyData[day] = 0);
+    
+    entries.forEach(entry => {
+        const dayName = days[new Date(entry.date).getDay()];
+        weeklyData[dayName] += entry.amount * 1000;
+    });
+    
+    const goalMl = (currentUser?.dailyLimit || 2) * 1000;
+    
+    const breakdownHtml = days.map(day => {
+        const amount = weeklyData[day];
+        const percentage = Math.min(100, (amount / goalMl) * 100);
+        return `
+            <div class="breakdown-item">
+                <div class="breakdown-day">${day}</div>
+                <div class="breakdown-amount">${amount.toFixed(0)} ml</div>
+                <div class="breakdown-progress">
+                    <div class="progress-bar-small">
+                        <div class="progress-fill-small" style="width: ${percentage}%"></div>
+                    </div>
+                    <div class="progress-percent">${percentage.toFixed(0)}%</div>
+                </div>
+            </div>
+        `;
+    }).join('');
+    
+    breakdownBody.innerHTML = breakdownHtml;
 }
 
 function setCurrentTime() {
