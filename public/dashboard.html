@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Smart Water Tracker - Dashboard</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    * { font-family: 'Inter', sans-serif; }
+    .progress-bar { transition: width 0.5s ease; }
+    .toast { position: fixed; bottom: 20px; right: 20px; z-index: 1000; animation: slideIn 0.3s ease; background: #333; color: white; padding: 12px 20px; border-radius: 8px; }
+    @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+    body.dark-mode { background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); }
+    body.dark-mode .bg-white\/80 { background: rgba(30, 41, 59, 0.9); }
+  </style>
+</head>
+<body class="bg-gradient-to-br from-blue-50 via-cyan-50 to-teal-50 transition-all">
+  <div id="loading" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center hidden">
+    <div class="bg-white rounded-xl p-6"><div class="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600 mx-auto"></div><p class="mt-2">Loading...</p></div>
+  </div>
+
+  <div class="min-h-screen">
+    <header class="bg-white/80 backdrop-blur-md shadow-sm sticky top-0 z-40">
+      <div class="max-w-7xl mx-auto px-4 py-4">
+        <div class="flex justify-between items-center">
+          <div class="flex items-center space-x-3">
+            <div class="w-10 h-10 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-xl flex items-center justify-center">
+              <i class="fas fa-tint text-white text-xl"></i>
+            </div>
+            <h1 class="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-cyan-600">AquaTrack</h1>
+          </div>
+          <div class="flex items-center space-x-4">
+            <button id="darkModeToggle" class="p-2 rounded-lg bg-gray-100 hover:bg-gray-200 transition"><i class="fas fa-moon"></i></button>
+            <span id="userName" class="font-medium"></span>
+            <button id="logoutBtn" class="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition">Logout</button>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-4 py-8">
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div class="bg-white/80 backdrop-blur-xl rounded-2xl p-6 shadow-lg">
+          <p class="text-gray-500 text-sm">Today's Water</p>
+          <p id="todayTotal" class="text-3xl font-bold text-blue-600">0 L</p>
+          <div class="mt-4">
+            <div class="flex justify-between text-sm"><span>Daily Goal</span><span id="dailyLimitDisplay">0 L</span></div>
+            <div class="w-full bg-gray-200 rounded-full h-2"><div id="progressBar" class="progress-bar bg-gradient-to-r from-blue-500 to-cyan-500 h-2 rounded-full" style="width:0%"></div></div>
+          </div>
+        </div>
+        <div class="bg-white/80 backdrop-blur-xl rounded-2xl p-6 shadow-lg">
+          <p class="text-gray-500 text-sm">Weekly Average</p>
+          <p id="weeklyAvg" class="text-3xl font-bold text-cyan-600">0 L</p>
+        </div>
+        <div class="bg-white/80 backdrop-blur-xl rounded-2xl p-6 shadow-lg">
+          <p class="text-gray-500 text-sm">Total Saved</p>
+          <p id="totalSaved" class="text-3xl font-bold text-green-600">0 L</p>
+        </div>
+      </div>
+
+      <div class="bg-white/80 backdrop-blur-xl rounded-2xl p-6 shadow-lg mb-8">
+        <h2 class="text-xl font-semibold mb-4">Add Water Intake</h2>
+        <div class="flex flex-col sm:flex-row gap-4">
+          <input type="number" id="waterAmount" step="0.1" placeholder="Amount in liters" class="flex-1 px-4 py-3 border rounded-xl">
+          <input type="date" id="waterDate" class="px-4 py-3 border rounded-xl">
+          <button id="addWaterBtn" class="px-6 py-3 bg-gradient-to-r from-blue-600 to-cyan-600 text-white rounded-xl hover:shadow-lg transition">Add Entry</button>
+        </div>
+        <div id="alertMessage" class="mt-4 hidden"></div>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+        <div class="bg-white/80 backdrop-blur-xl rounded-2xl p-6 shadow-lg"><canvas id="weeklyChart" height="250"></canvas></div>
+        <div class="bg-white/80 backdrop-blur-xl rounded-2xl p-6 shadow-lg"><canvas id="monthlyChart" height="250"></canvas></div>
+      </div>
+
+      <div class="bg-gradient-to-r from-blue-500 to-cyan-500 rounded-2xl p-6 shadow-lg mb-8 text-white">
+        <div class="flex items-start space-x-4">
+          <i class="fas fa-lightbulb text-3xl"></i>
+          <div><h3 class="text-xl font-semibold mb-2">Smart Insight</h3><p id="insightText">Loading...</p></div>
+        </div>
+      </div>
+
+      <div class="bg-white/80 backdrop-blur-xl rounded-2xl p-6 shadow-lg">
+        <div class="flex justify-between items-center mb-4">
+          <h3 class="text-xl font-semibold">Water History</h3>
+          <button id="exportBtn" class="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition">Export CSV</button>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full"><thead class="border-b"><tr><th class="pb-3 text-left">Date</th><th class="pb-3 text-left">Amount (L)</th><th class="pb-3 text-left">Actions</th></tr></thead><tbody id="historyTable"></tbody></table>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    const API_URL = window.location.origin;
+    const token = localStorage.getItem('token');
+    if (!token) window.location.href = '/';
+
+    let currentUser = null, waterEntries = [];
+
+    async function loadUserData() {
+      const res = await fetch(`${API_URL}/api/auth/me`, { headers: { 'Authorization': `Bearer ${token}` } });
+      if (res.ok) { currentUser = await res.json(); document.getElementById('userName').innerHTML = currentUser.name; document.getElementById('dailyLimitDisplay').innerHTML = `${currentUser.dailyLimit} L`; }
+      else logout();
+    }
+
+    async function loadWaterEntries() {
+      showLoading(true);
+      const res = await fetch(`${API_URL}/api/water`, { headers: { 'Authorization': `Bearer ${token}` } });
+      const data = await res.json();
+      if (res.ok) { waterEntries = data.entries; updateDashboard(); }
+      showLoading(false);
+    }
+
+    async function addWaterEntry(amount, date) {
+      showLoading(true);
+      const res = await fetch(`${API_URL}/api/water`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, body: JSON.stringify({ amount, date }) });
+      if (res.ok) { await loadWaterEntries(); showToast('Entry added!'); }
+      showLoading(false);
+    }
+
+    async function deleteWaterEntry(id) {
+      if (!confirm('Delete?')) return;
+      showLoading(true);
+      await fetch(`${API_URL}/api/water/${id}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` } });
+      await loadWaterEntries();
+      showLoading(false);
+    }
+
+    function updateDashboard() {
+      const today = new Date().toISOString().split('T')[0];
+      const todayTotal = waterEntries.filter(e => e.date.split('T')[0] === today).reduce((s, e) => s + e.amount, 0);
+      document.getElementById('todayTotal').innerHTML = `${todayTotal.toFixed(1)} L`;
+      const percent = Math.min(100, (todayTotal / currentUser.dailyLimit) * 100);
+      document.getElementById('progressBar').style.width = `${percent}%`;
+      
+      const weeklyData = Array(7).fill(0);
+      const startOfWeek = new Date(); startOfWeek.setDate(startOfWeek.getDate() - startOfWeek.getDay());
+      waterEntries.forEach(e => { const d = new Date(e.date); const diff = Math.floor((d - startOfWeek) / (86400000)); if (diff >= 0 && diff < 7) weeklyData[diff] += e.amount; });
+      const weeklyAvg = weeklyData.reduce((a,b)=>a+b,0)/7;
+      document.getElementById('weeklyAvg').innerHTML = `${weeklyAvg.toFixed(1)} L`;
+      
+      const totalWater = waterEntries.reduce((s,e)=>s+e.amount,0);
+      const recommended = currentUser.dailyLimit * waterEntries.length;
+      document.getElementById('totalSaved').innerHTML = `${Math.max(0, recommended - totalWater).toFixed(1)} L`;
+      
+      const tbody = document.getElementById('historyTable');
+      tbody.innerHTML = [...waterEntries].sort((a,b)=>new Date(b.date)-new Date(a.date)).slice(0,10).map(e => `<tr class="border-b"><td class="py-2">${new Date(e.date).toLocaleDateString()}</td><td>${e.amount} L</td><td><button onclick="deleteWaterEntry('${e._id}')" class="text-red-500">Delete</button></td></tr>`).join('');
+      
+      loadInsights();
+      updateCharts();
+    }
+
+    async function loadInsights() {
+      const res = await fetch(`${API_URL}/api/analytics/insights`, { headers: { 'Authorization': `Bearer ${token}` } });
+      const data = await res.json();
+      if (res.ok) document.getElementById('insightText').innerHTML = data.exceeded ? `⚠️ Exceeded limit! ${data.tip}` : `💪 Good job! ${data.tip}`;
+    }
+
+    let weeklyChart, monthlyChart;
+    function updateCharts() {
+      const weeklyData = Array(7).fill(0);
+      const startOfWeek = new Date(); startOfWeek.setDate(startOfWeek.getDate() - startOfWeek.getDay());
+      waterEntries.forEach(e => { const d = new Date(e.date); const diff = Math.floor((d - startOfWeek) / 86400000); if (diff >= 0 && diff < 7) weeklyData[diff] += e.amount; });
+      if (weeklyChart) weeklyChart.destroy();
+      weeklyChart = new Chart(document.getElementById('weeklyChart'), { type: 'bar', data: { labels: ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'], datasets: [{ label: 'Liters', data: weeklyData, backgroundColor: '#3b82f6' }] } });
+      
+      const monthlyData = Array(31).fill(0);
+      const today = new Date();
+      waterEntries.forEach(e => { const d = new Date(e.date); if (d.getMonth() === today.getMonth()) monthlyData[d.getDate()-1] += e.amount; });
+      if (monthlyChart) monthlyChart.destroy();
+      monthlyChart = new Chart(document.getElementById('monthlyChart'), { type: 'line', data: { labels: Array.from({length:31},(_,i)=>i+1), datasets: [{ label: 'Liters', data: monthlyData, borderColor: '#06b6d4', tension: 0.4 }] } });
+    }
+
+    function exportCSV() { let csv = "Date,Amount (L)\n"; waterEntries.forEach(e => csv += `${new Date(e.date).toLocaleDateString()},${e.amount}\n`); const blob = new Blob([csv], {type:'text/csv'}); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = `water_data.csv`; a.click(); URL.revokeObjectURL(url); showToast('Exported!'); }
+    function showToast(msg) { const t = document.createElement('div'); t.className = 'toast'; t.innerHTML = msg; document.body.appendChild(t); setTimeout(() => t.remove(), 3000); }
+    function showLoading(show) { document.getElementById('loading').classList.toggle('hidden', !show); }
+    function logout() { localStorage.clear(); window.location.href = '/'; }
+
+    document.getElementById('addWaterBtn').onclick = () => { const amt = parseFloat(document.getElementById('waterAmount').value); const date = document.getElementById('waterDate').value || new Date().toISOString().split('T')[0]; if (amt > 0) addWaterEntry(amt, date); };
+    document.getElementById('logoutBtn').onclick = logout;
+    document.getElementById('exportBtn').onclick = exportCSV;
+    document.getElementById('darkModeToggle').onclick = () => { document.body.classList.toggle('dark-mode'); localStorage.setItem('darkMode', document.body.classList.contains('dark-mode')); };
+    if (localStorage.getItem('darkMode') === 'true') document.body.classList.add('dark-mode');
+    
+    loadUserData();
+    loadWaterEntries();
+  </script>
+</body>
+</html>
