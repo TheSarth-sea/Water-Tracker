@@ -620,3 +620,351 @@ function setupEventListeners() {
         });
     });
 }
+// ===== GOAL SETTINGS FUNCTIONS =====
+
+// Initialize goal settings
+function initGoalSettings() {
+    const goalSlider = document.getElementById('dailyGoalSlider');
+    const goalInput = document.getElementById('dailyGoalInput');
+    const goalDisplay = document.getElementById('goalValueDisplay');
+    
+    if (goalSlider && currentUser) {
+        const currentGoalMl = currentUser.dailyLimit * 1000;
+        goalSlider.value = currentGoalMl;
+        goalInput.value = currentGoalMl;
+        if (goalDisplay) goalDisplay.textContent = currentGoalMl;
+        
+        // Slider event
+        goalSlider.addEventListener('input', function() {
+            const value = parseInt(this.value);
+            goalInput.value = value;
+            if (goalDisplay) goalDisplay.textContent = value;
+        });
+        
+        // Number input event
+        goalInput.addEventListener('input', function() {
+            let value = parseInt(this.value);
+            if (isNaN(value)) value = 2000;
+            value = Math.min(5000, Math.max(500, value));
+            goalSlider.value = value;
+            if (goalDisplay) goalDisplay.textContent = value;
+        });
+    }
+}
+
+// Adjust goal by increment
+function adjustGoal(increment) {
+    const goalInput = document.getElementById('dailyGoalInput');
+    if (goalInput) {
+        let newValue = parseInt(goalInput.value) + increment;
+        newValue = Math.min(5000, Math.max(500, newValue));
+        goalInput.value = newValue;
+        
+        const goalSlider = document.getElementById('dailyGoalSlider');
+        const goalDisplay = document.getElementById('goalValueDisplay');
+        if (goalSlider) goalSlider.value = newValue;
+        if (goalDisplay) goalDisplay.textContent = newValue;
+    }
+}
+
+// Save daily goal to backend
+async function saveDailyGoal() {
+    const goalInput = document.getElementById('dailyGoalInput');
+    const newGoalMl = parseInt(goalInput?.value);
+    
+    if (!newGoalMl || newGoalMl < 500 || newGoalMl > 5000) {
+        showNotification('Please enter a valid goal between 500 and 5000 ml', 'error');
+        return;
+    }
+    
+    const newGoalL = newGoalMl / 1000;
+    
+    // Show saving state
+    const saveBtn = document.getElementById('saveGoalBtn');
+    const originalText = saveBtn.innerHTML;
+    saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+    saveBtn.disabled = true;
+    
+    try {
+        const token = localStorage.getItem('token');
+        const response = await fetch(`${API_URL}/api/auth/limit`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ dailyLimit: newGoalL })
+        });
+        
+        const data = await response.json();
+        
+        if (response.ok) {
+            currentUser.dailyLimit = newGoalL;
+            showNotification(`Daily goal updated to ${newGoalMl} ml!`, 'success');
+            
+            // Update dashboard displays
+            document.getElementById('dailyGoal').textContent = `${newGoalMl} ml`;
+            document.getElementById('goalAmount').textContent = `${newGoalMl} ml`;
+            
+            // Update progress bar
+            updateDashboard();
+        } else {
+            showNotification(data.message || 'Failed to update goal', 'error');
+        }
+    } catch (error) {
+        console.error('Error saving goal:', error);
+        showNotification('Network error. Please try again.', 'error');
+    } finally {
+        saveBtn.innerHTML = originalText;
+        saveBtn.disabled = false;
+    }
+}
+
+// ===== NOTIFICATION FUNCTIONS =====
+
+// Initialize notification settings
+function initNotificationSettings() {
+    const notificationToggle = document.getElementById('notificationsToggle');
+    const reminderContainer = document.getElementById('reminderTimeContainer');
+    const reminderTime = document.getElementById('reminderTime');
+    
+    if (notificationToggle) {
+        const savedNotifications = localStorage.getItem('notificationsEnabled') === 'true';
+        notificationToggle.checked = savedNotifications;
+        
+        if (reminderContainer) {
+            reminderContainer.style.display = savedNotifications ? 'block' : 'none';
+        }
+        
+        // Load saved reminder time
+        const savedReminderTime = localStorage.getItem('reminderTime');
+        if (savedReminderTime && reminderTime) {
+            reminderTime.value = savedReminderTime;
+        } else if (reminderTime) {
+            reminderTime.value = '09:00';
+        }
+        
+        notificationToggle.addEventListener('change', function() {
+            const enabled = this.checked;
+            localStorage.setItem('notificationsEnabled', enabled);
+            
+            if (reminderContainer) {
+                reminderContainer.style.display = enabled ? 'block' : 'none';
+            }
+            
+            if (enabled) {
+                const time = reminderTime.value;
+                scheduleDailyReminder(time);
+                showNotification(`Daily reminders enabled for ${time}`, 'success');
+            } else {
+                cancelDailyReminder();
+                showNotification('Reminders disabled', 'info');
+            }
+        });
+        
+        if (reminderTime) {
+            reminderTime.addEventListener('change', function() {
+                if (notificationToggle.checked) {
+                    const time = this.value;
+                    localStorage.setItem('reminderTime', time);
+                    scheduleDailyReminder(time);
+                    showNotification(`Reminder time updated to ${time}`, 'success');
+                }
+            });
+        }
+    }
+}
+
+// Schedule daily reminder
+let reminderInterval = null;
+
+function scheduleDailyReminder(time) {
+    // Clear existing reminder
+    if (reminderInterval) {
+        clearInterval(reminderInterval);
+    }
+    
+    const [hours, minutes] = time.split(':');
+    const now = new Date();
+    let reminderTime = new Date();
+    reminderTime.setHours(parseInt(hours), parseInt(minutes), 0, 0);
+    
+    if (reminderTime <= now) {
+        reminderTime.setDate(reminderTime.getDate() + 1);
+    }
+    
+    const timeUntilReminder = reminderTime - now;
+    
+    setTimeout(() => {
+        sendNotification();
+        // Set interval for daily reminders
+        reminderInterval = setInterval(sendNotification, 24 * 60 * 60 * 1000);
+    }, timeUntilReminder);
+}
+
+function cancelDailyReminder() {
+    if (reminderInterval) {
+        clearInterval(reminderInterval);
+        reminderInterval = null;
+    }
+}
+
+function sendNotification() {
+    if (Notification.permission === 'granted') {
+        new Notification('💧 AquaTrack Reminder', {
+            body: "Time to track your water consumption! Don't forget to stay hydrated.",
+            icon: '/favicon.ico'
+        });
+        showNotification('Daily reminder: Time to log your water intake!', 'info');
+    } else if (Notification.permission !== 'denied') {
+        Notification.requestPermission().then(permission => {
+            if (permission === 'granted') {
+                sendNotification();
+            }
+        });
+    }
+}
+
+function testNotification() {
+    if (Notification.permission === 'granted') {
+        new Notification('💧 AquaTrack Test', {
+            body: "This is a test notification! Your reminders are working.",
+            icon: '/favicon.ico'
+        });
+        showNotification('Test notification sent!', 'success');
+    } else if (Notification.permission !== 'denied') {
+        Notification.requestPermission().then(permission => {
+            if (permission === 'granted') {
+                testNotification();
+            }
+        });
+    } else {
+        showNotification('Please enable notifications in your browser settings', 'error');
+    }
+}
+
+// ===== THEME FUNCTIONS =====
+
+// Set theme
+function setTheme(theme) {
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem('theme', theme);
+    
+    // Update active button
+    document.querySelectorAll('.theme-option').forEach(btn => {
+        btn.classList.remove('active');
+        if (btn.getAttribute('data-theme') === theme) {
+            btn.classList.add('active');
+        }
+    });
+    
+    // Update theme toggle button in header
+    const themeToggle = document.getElementById('themeToggle');
+    if (themeToggle) {
+        themeToggle.innerHTML = theme === 'dark' ? '<i class="fas fa-sun"></i>' : '<i class="fas fa-moon"></i>';
+    }
+    
+    showNotification(`${theme === 'dark' ? 'Dark' : 'Light'} mode activated`, 'success');
+}
+
+// Initialize theme
+function initTheme() {
+    const savedTheme = localStorage.getItem('theme') || 'light';
+    setTheme(savedTheme);
+}
+
+// ===== DATA MANAGEMENT FUNCTIONS =====
+
+// Export data as CSV
+function exportData() {
+    if (!waterEntries || waterEntries.length === 0) {
+        showNotification('No data to export', 'error');
+        return;
+    }
+    
+    const csvRows = [
+        ['Date', 'Amount (ml)', 'Notes', 'Time']
+    ];
+    
+    waterEntries.forEach(entry => {
+        const date = new Date(entry.date);
+        csvRows.push([
+            date.toLocaleDateString(),
+            (entry.amount * 1000).toFixed(0),
+            entry.notes || 'Water intake',
+            date.toLocaleTimeString()
+        ]);
+    });
+    
+    const csvContent = csvRows.map(row => row.join(',')).join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `aquatrack_export_${new Date().toISOString().split('T')[0]}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    
+    showNotification(`Exported ${waterEntries.length} entries successfully!`, 'success');
+}
+
+// Clear all data
+async function clearAllData() {
+    if (!confirm('⚠️ WARNING: This will delete ALL your water tracking data. This action cannot be undone. Are you absolutely sure?')) {
+        return;
+    }
+    
+    if (!confirm('Last chance! Are you sure you want to delete everything?')) {
+        return;
+    }
+    
+    showLoading(true);
+    
+    try {
+        const token = localStorage.getItem('token');
+        const entries = [...waterEntries];
+        let deleted = 0;
+        
+        for (const entry of entries) {
+            const response = await fetch(`${API_URL}/api/water/${entry._id}`, {
+                method: 'DELETE',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            
+            if (response.ok) {
+                deleted++;
+            }
+        }
+        
+        await loadWaterEntries();
+        showNotification(`Successfully deleted ${deleted} entries!`, 'success');
+        
+        // Refresh dashboard
+        if (typeof updateDashboard === 'function') {
+            updateDashboard();
+        }
+        
+        if (typeof refreshAnalytics === 'function') {
+            refreshAnalytics();
+        }
+        
+    } catch (error) {
+        console.error('Error clearing data:', error);
+        showNotification('Error clearing data. Please try again.', 'error');
+    } finally {
+        showLoading(false);
+    }
+}
+
+// Update the initDashboard function to include settings initialization
+// Add this to your existing initDashboard function:
+async function initDashboard() {
+    // ... existing code ...
+    
+    // Initialize settings
+    initGoalSettings();
+    initNotificationSettings();
+    initTheme();
+    
+    // ... rest of existing code ...
+}
