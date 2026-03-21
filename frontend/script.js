@@ -1,246 +1,205 @@
-// ===== API Configuration =====
+// ===== CONFIGURATION =====
 const API_URL = window.location.origin;
 let currentUser = null;
 let waterEntries = [];
 let charts = {};
 
-// ===== Initialize App =====
-document.addEventListener('DOMContentLoaded', () => {
-    // Check if user is logged in
-    const token = localStorage.getItem('token');
-    if (token && window.location.pathname.includes('dashboard.html')) {
-        initDashboard();
-    } else if (token && !window.location.pathname.includes('dashboard.html')) {
-        window.location.href = '/dashboard.html';
-    } else if (!token && window.location.pathname.includes('dashboard.html')) {
+// ===== EMERGENCY LOADING SCREEN FIX =====
+console.log('🚀 AquaTrack starting...');
+
+// Force hide loading screen after page loads
+window.addEventListener('DOMContentLoaded', function() {
+    console.log('📄 DOM loaded');
+    
+    // Check if we're on dashboard or index page
+    const isDashboard = window.location.pathname.includes('dashboard.html');
+    const hasToken = localStorage.getItem('token');
+    
+    console.log('Is Dashboard:', isDashboard);
+    console.log('Has Token:', !!hasToken);
+    
+    // Handle loading screen
+    const loadingScreen = document.getElementById('loadingScreen');
+    if (loadingScreen) {
+        setTimeout(function() {
+            loadingScreen.style.opacity = '0';
+            setTimeout(function() {
+                loadingScreen.style.display = 'none';
+                console.log('✅ Loading screen hidden');
+            }, 500);
+        }, 1500);
+    }
+    
+    // Redirect logic
+    if (isDashboard && !hasToken) {
+        console.log('No token, redirecting to login');
         window.location.href = '/';
-    } else {
-        initAuth();
-    }
-    
-    // Set current date
-    const dateElement = document.getElementById('currentDate');
-    if (dateElement) {
-        const now = new Date();
-        dateElement.textContent = now.toLocaleDateString('en-US', { 
-            weekday: 'long', 
-            year: 'numeric', 
-            month: 'long', 
-            day: 'numeric' 
-        });
-    }
-    
-    // Theme toggle
-    const themeToggle = document.getElementById('themeToggle');
-    if (themeToggle) {
-        const savedTheme = localStorage.getItem('theme') || 'light';
-        document.documentElement.setAttribute('data-theme', savedTheme);
-        themeToggle.innerHTML = savedTheme === 'dark' ? '<i class="fas fa-sun"></i>' : '<i class="fas fa-moon"></i>';
-        
-        themeToggle.addEventListener('click', () => {
-            const currentTheme = document.documentElement.getAttribute('data-theme');
-            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
-            document.documentElement.setAttribute('data-theme', newTheme);
-            localStorage.setItem('theme', newTheme);
-            themeToggle.innerHTML = newTheme === 'dark' ? '<i class="fas fa-sun"></i>' : '<i class="fas fa-moon"></i>';
-        });
-    }
-    
-    // Navigation
-    document.querySelectorAll('.nav-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-            const page = btn.getAttribute('data-page');
-            switchPage(page);
-        });
-    });
-    
-    // Floating add button
-    const floatingBtn = document.getElementById('floatingAddBtn');
-    if (floatingBtn) {
-        floatingBtn.addEventListener('click', () => switchPage('add-water'));
+    } else if (!isDashboard && hasToken) {
+        console.log('Has token, checking validity...');
+        checkTokenValidity();
     }
 });
 
-// ===== Auth Functions =====
-function initAuth() {
-    setTimeout(() => {
-        const loadingScreen = document.getElementById('loadingScreen');
-        if (loadingScreen) loadingScreen.style.opacity = '0';
-        setTimeout(() => {
-            if (loadingScreen) loadingScreen.style.display = 'none';
-        }, 500);
-    }, 1000);
-}
-
-async function handleLogin() {
-    const email = document.getElementById('loginEmail').value;
-    const password = document.getElementById('loginPassword').value;
-    
-    if (!email || !password) {
-        showNotification('Please fill in all fields', 'error');
-        return;
-    }
-    
+async function checkTokenValidity() {
+    const token = localStorage.getItem('token');
     try {
-        const response = await fetch(`${API_URL}/api/auth/login`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email, password })
+        const response = await fetch(`${API_URL}/api/auth/me`, {
+            headers: { 'Authorization': `Bearer ${token}` }
         });
         
-        const data = await response.json();
-        
         if (response.ok) {
-            localStorage.setItem('token', data.token);
-            localStorage.setItem('user', JSON.stringify(data.user));
-            showNotification('Login successful!', 'success');
-            window.location.href = '/dashboard.html';
+            console.log('Token valid, staying on page');
+            if (window.location.pathname.includes('index.html') || window.location.pathname === '/') {
+                window.location.href = '/dashboard.html';
+            } else {
+                initDashboard();
+            }
         } else {
-            showNotification(data.message || 'Login failed', 'error');
+            console.log('Token invalid, clearing and redirecting');
+            localStorage.clear();
+            window.location.href = '/';
         }
     } catch (error) {
-        showNotification('Network error. Please try again.', 'error');
-    }
-}
-
-async function handleSignup() {
-    const name = document.getElementById('signupName').value;
-    const email = document.getElementById('signupEmail').value;
-    const password = document.getElementById('signupPassword').value;
-    
-    if (!name || !email || !password) {
-        showNotification('Please fill in all fields', 'error');
-        return;
-    }
-    
-    if (password.length < 6) {
-        showNotification('Password must be at least 6 characters', 'error');
-        return;
-    }
-    
-    try {
-        const response = await fetch(`${API_URL}/api/auth/register`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ name, email, password })
-        });
-        
-        const data = await response.json();
-        
-        if (response.ok) {
-            localStorage.setItem('token', data.token);
-            localStorage.setItem('user', JSON.stringify(data.user));
-            showNotification('Account created successfully!', 'success');
-            window.location.href = '/dashboard.html';
-        } else {
-            showNotification(data.message || 'Signup failed', 'error');
+        console.error('Token check error:', error);
+        // Don't redirect on network error, let user try
+        if (window.location.pathname.includes('dashboard.html')) {
+            showNotification('Connection error. Please check your internet.', 'error');
         }
-    } catch (error) {
-        showNotification('Network error. Please try again.', 'error');
     }
 }
 
-function showLogin() {
-    document.getElementById('loginForm').style.display = 'block';
-    document.getElementById('signupForm').style.display = 'none';
-    document.getElementById('authTitle').textContent = 'Welcome Back';
-    document.getElementById('authSubtitle').textContent = 'Track your water consumption journey';
-}
-
-function showSignup() {
-    document.getElementById('loginForm').style.display = 'none';
-    document.getElementById('signupForm').style.display = 'block';
-    document.getElementById('authTitle').textContent = 'Create Account';
-    document.getElementById('authSubtitle').textContent = 'Start tracking your water usage today';
-}
-
-// ===== Dashboard Functions =====
+// ===== DASHBOARD INITIALIZATION =====
 async function initDashboard() {
-    // Hide loading screen
-    setTimeout(() => {
-        const loadingScreen = document.getElementById('loadingScreen');
-        if (loadingScreen) loadingScreen.style.opacity = '0';
-        setTimeout(() => {
-            if (loadingScreen) loadingScreen.style.display = 'none';
-        }, 500);
-    }, 500);
+    console.log('📊 Initializing dashboard...');
     
-    // Load user data
-    await loadUserData();
-    await loadWaterEntries();
-    setupEventListeners();
-    setupPreview();
+    try {
+        await loadUserData();
+        await loadWaterEntries();
+        setupEventListeners();
+        setupPreview();
+        initGoalSettings();
+        initNotificationSettings();
+        initTheme();
+        
+        console.log('✅ Dashboard initialized successfully');
+    } catch (error) {
+        console.error('❌ Dashboard initialization error:', error);
+        showNotification('Error loading dashboard. Please refresh the page.', 'error');
+    }
 }
 
+// ===== LOAD USER DATA =====
 async function loadUserData() {
     try {
         const token = localStorage.getItem('token');
+        if (!token) {
+            console.log('No token found');
+            return;
+        }
+        
+        console.log('Loading user data...');
         const response = await fetch(`${API_URL}/api/auth/me`, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
         
         if (response.ok) {
             currentUser = await response.json();
-            document.getElementById('userName').textContent = currentUser.name;
-            document.getElementById('dailyGoal').textContent = `${currentUser.dailyLimit * 1000} ml`;
-            document.getElementById('goalAmount').textContent = `${currentUser.dailyLimit * 1000} ml`;
-            document.getElementById('dailyGoalInput').value = currentUser.dailyLimit * 1000;
+            console.log('User loaded:', currentUser.name);
+            
+            // Update UI elements if they exist
+            const userNameEl = document.getElementById('userName');
+            if (userNameEl) userNameEl.textContent = currentUser.name;
+            
+            const dailyGoalEl = document.getElementById('dailyGoal');
+            if (dailyGoalEl) dailyGoalEl.textContent = `${currentUser.dailyLimit * 1000} ml`;
+            
+            const goalAmountEl = document.getElementById('goalAmount');
+            if (goalAmountEl) goalAmountEl.textContent = `${currentUser.dailyLimit * 1000} ml`;
+            
+            const dailyGoalInput = document.getElementById('dailyGoalInput');
+            if (dailyGoalInput) dailyGoalInput.value = currentUser.dailyLimit * 1000;
+            
         } else {
-            handleLogout();
+            console.error('Failed to load user:', response.status);
+            localStorage.clear();
+            window.location.href = '/';
         }
     } catch (error) {
         console.error('Error loading user:', error);
+        showNotification('Failed to load user data', 'error');
     }
 }
 
+// ===== LOAD WATER ENTRIES =====
 async function loadWaterEntries() {
     try {
         const token = localStorage.getItem('token');
+        if (!token) return;
+        
+        console.log('Loading water entries...');
         const response = await fetch(`${API_URL}/api/water`, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
         
         const data = await response.json();
         if (response.ok) {
-            waterEntries = data.entries;
+            waterEntries = data.entries || [];
+            console.log(`Loaded ${waterEntries.length} entries`);
             updateDashboard();
+        } else {
+            console.error('Failed to load entries:', data);
         }
     } catch (error) {
         console.error('Error loading entries:', error);
+        waterEntries = [];
     }
 }
 
+// ===== UPDATE DASHBOARD =====
 function updateDashboard() {
+    console.log('Updating dashboard...');
+    
     const today = new Date().toISOString().split('T')[0];
     const todayEntries = waterEntries.filter(e => e.date.split('T')[0] === today);
     const todayTotal = todayEntries.reduce((sum, e) => sum + e.amount, 0);
-    const dailyGoalMl = currentUser.dailyLimit * 1000;
+    const dailyGoalMl = currentUser ? currentUser.dailyLimit * 1000 : 2000;
     
-    // Update stats
-    document.getElementById('todayTotal').textContent = `${(todayTotal * 1000).toFixed(0)} ml`;
-    document.getElementById('progressPercent').textContent = `${Math.min(100, Math.floor((todayTotal / currentUser.dailyLimit) * 100))}%`;
-    document.getElementById('currentAmount').textContent = `${(todayTotal * 1000).toFixed(0)} ml`;
+    // Update stats if elements exist
+    const todayTotalEl = document.getElementById('todayTotal');
+    if (todayTotalEl) todayTotalEl.textContent = `${(todayTotal * 1000).toFixed(0)} ml`;
+    
+    const progressPercentEl = document.getElementById('progressPercent');
+    if (progressPercentEl) {
+        const percent = Math.min(100, Math.floor((todayTotal / (currentUser?.dailyLimit || 2) * 100)));
+        progressPercentEl.textContent = `${percent}%`;
+    }
+    
+    const currentAmountEl = document.getElementById('currentAmount');
+    if (currentAmountEl) currentAmountEl.textContent = `${(todayTotal * 1000).toFixed(0)} ml`;
     
     // Update progress bar
-    const progressPercent = Math.min(100, (todayTotal / currentUser.dailyLimit) * 100);
-    document.getElementById('progressFill').style.width = `${progressPercent}%`;
-    
-    // Update quick actions
-    document.querySelectorAll('.quick-btn').forEach(btn => {
-        btn.onclick = () => addWaterEntry(parseInt(btn.getAttribute('data-amount')) / 1000);
-    });
+    const progressFill = document.getElementById('progressFill');
+    if (progressFill) {
+        const percent = Math.min(100, (todayTotal / (currentUser?.dailyLimit || 2)) * 100);
+        progressFill.style.width = `${percent}%`;
+    }
     
     // Update recent entries
     updateRecentEntries();
     
     // Update charts
-    updatePieChart(todayEntries);
-    updateWeeklyChart();
+    if (typeof updatePieChart === 'function') updatePieChart(todayEntries);
+    if (typeof updateWeeklyChart === 'function') updateWeeklyChart();
 }
 
+// ===== UPDATE RECENT ENTRIES =====
 function updateRecentEntries() {
     const entriesList = document.getElementById('entriesList');
-    const recentEntries = [...waterEntries].sort((a, b) => new Date(b.date) - new Date(a.date)).slice(0, 10);
+    if (!entriesList) return;
+    
+    const recentEntries = [...waterEntries]
+        .sort((a, b) => new Date(b.date) - new Date(a.date))
+        .slice(0, 10);
     
     if (recentEntries.length === 0) {
         entriesList.innerHTML = `
@@ -268,8 +227,418 @@ function updateRecentEntries() {
     `).join('');
 }
 
+// ===== GOAL SETTINGS FUNCTIONS =====
+function initGoalSettings() {
+    const goalSlider = document.getElementById('dailyGoalSlider');
+    const goalInput = document.getElementById('dailyGoalInput');
+    const goalDisplay = document.getElementById('goalValueDisplay');
+    
+    if (goalSlider && currentUser) {
+        const currentGoalMl = currentUser.dailyLimit * 1000;
+        goalSlider.value = currentGoalMl;
+        if (goalInput) goalInput.value = currentGoalMl;
+        if (goalDisplay) goalDisplay.textContent = currentGoalMl;
+        
+        if (goalSlider) {
+            goalSlider.addEventListener('input', function() {
+                const value = parseInt(this.value);
+                if (goalInput) goalInput.value = value;
+                if (goalDisplay) goalDisplay.textContent = value;
+            });
+        }
+        
+        if (goalInput) {
+            goalInput.addEventListener('input', function() {
+                let value = parseInt(this.value);
+                if (isNaN(value)) value = 2000;
+                value = Math.min(5000, Math.max(500, value));
+                if (goalSlider) goalSlider.value = value;
+                if (goalDisplay) goalDisplay.textContent = value;
+            });
+        }
+    }
+}
+
+function adjustGoal(increment) {
+    const goalInput = document.getElementById('dailyGoalInput');
+    if (goalInput) {
+        let newValue = parseInt(goalInput.value) + increment;
+        newValue = Math.min(5000, Math.max(500, newValue));
+        goalInput.value = newValue;
+        
+        const goalSlider = document.getElementById('dailyGoalSlider');
+        const goalDisplay = document.getElementById('goalValueDisplay');
+        if (goalSlider) goalSlider.value = newValue;
+        if (goalDisplay) goalDisplay.textContent = newValue;
+    }
+}
+
+async function saveDailyGoal() {
+    const goalInput = document.getElementById('dailyGoalInput');
+    const newGoalMl = parseInt(goalInput?.value);
+    
+    if (!newGoalMl || newGoalMl < 500 || newGoalMl > 5000) {
+        showNotification('Please enter a valid goal between 500 and 5000 ml', 'error');
+        return;
+    }
+    
+    const newGoalL = newGoalMl / 1000;
+    
+    const saveBtn = document.getElementById('saveGoalBtn');
+    if (saveBtn) {
+        const originalText = saveBtn.innerHTML;
+        saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+        saveBtn.disabled = true;
+        
+        try {
+            const token = localStorage.getItem('token');
+            const response = await fetch(`${API_URL}/api/auth/limit`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ dailyLimit: newGoalL })
+            });
+            
+            const data = await response.json();
+            
+            if (response.ok) {
+                currentUser.dailyLimit = newGoalL;
+                showNotification(`Daily goal updated to ${newGoalMl} ml!`, 'success');
+                
+                const dailyGoalEl = document.getElementById('dailyGoal');
+                if (dailyGoalEl) dailyGoalEl.textContent = `${newGoalMl} ml`;
+                
+                const goalAmountEl = document.getElementById('goalAmount');
+                if (goalAmountEl) goalAmountEl.textContent = `${newGoalMl} ml`;
+                
+                updateDashboard();
+            } else {
+                showNotification(data.message || 'Failed to update goal', 'error');
+            }
+        } catch (error) {
+            console.error('Error saving goal:', error);
+            showNotification('Network error. Please try again.', 'error');
+        } finally {
+            saveBtn.innerHTML = originalText;
+            saveBtn.disabled = false;
+        }
+    }
+}
+
+// ===== NOTIFICATION FUNCTIONS =====
+function initNotificationSettings() {
+    const notificationToggle = document.getElementById('notificationsToggle');
+    const reminderContainer = document.getElementById('reminderTimeContainer');
+    const reminderTime = document.getElementById('reminderTime');
+    
+    if (notificationToggle) {
+        const savedNotifications = localStorage.getItem('notificationsEnabled') === 'true';
+        notificationToggle.checked = savedNotifications;
+        
+        if (reminderContainer) {
+            reminderContainer.style.display = savedNotifications ? 'block' : 'none';
+        }
+        
+        const savedReminderTime = localStorage.getItem('reminderTime');
+        if (savedReminderTime && reminderTime) {
+            reminderTime.value = savedReminderTime;
+        } else if (reminderTime) {
+            reminderTime.value = '09:00';
+        }
+        
+        notificationToggle.addEventListener('change', function() {
+            const enabled = this.checked;
+            localStorage.setItem('notificationsEnabled', enabled);
+            if (reminderContainer) {
+                reminderContainer.style.display = enabled ? 'block' : 'none';
+            }
+            if (enabled && reminderTime) {
+                showNotification(`Daily reminders enabled for ${reminderTime.value}`, 'success');
+            } else {
+                showNotification('Reminders disabled', 'info');
+            }
+        });
+        
+        if (reminderTime) {
+            reminderTime.addEventListener('change', function() {
+                if (notificationToggle.checked) {
+                    localStorage.setItem('reminderTime', this.value);
+                    showNotification(`Reminder time updated to ${this.value}`, 'success');
+                }
+            });
+        }
+    }
+}
+
+function testNotification() {
+    showNotification('🔔 This is a test notification! Your reminders are working.', 'success');
+}
+
+// ===== THEME FUNCTIONS =====
+function setTheme(theme) {
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem('theme', theme);
+    
+    document.querySelectorAll('.theme-option').forEach(btn => {
+        btn.classList.remove('active');
+        if (btn.getAttribute('data-theme') === theme) {
+            btn.classList.add('active');
+        }
+    });
+    
+    const themeToggle = document.getElementById('themeToggle');
+    if (themeToggle) {
+        themeToggle.innerHTML = theme === 'dark' ? '<i class="fas fa-sun"></i>' : '<i class="fas fa-moon"></i>';
+    }
+}
+
+function initTheme() {
+    const savedTheme = localStorage.getItem('theme') || 'light';
+    setTheme(savedTheme);
+}
+
+// ===== WATER ENTRY FUNCTIONS =====
+function setupPreview() {
+    const slider = document.getElementById('amountSlider');
+    const display = document.getElementById('amountDisplay');
+    const previewAmount = document.getElementById('previewAmount');
+    const purposeSelect = document.getElementById('purposeSelect');
+    const previewPurpose = document.getElementById('previewPurpose');
+    
+    if (slider) {
+        slider.addEventListener('input', () => {
+            const value = slider.value;
+            if (display) display.textContent = `${value} ml`;
+            if (previewAmount) previewAmount.textContent = `${value} ml`;
+        });
+    }
+    
+    if (purposeSelect && previewPurpose) {
+        purposeSelect.addEventListener('change', () => {
+            previewPurpose.textContent = purposeSelect.options[purposeSelect.selectedIndex]?.text || 'Drinking';
+        });
+    }
+    
+    document.querySelectorAll('.preset-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const amount = btn.getAttribute('data-amount');
+            if (slider) slider.value = amount;
+            if (display) display.textContent = `${amount} ml`;
+            if (previewAmount) previewAmount.textContent = `${amount} ml`;
+        });
+    });
+}
+
+function setCurrentTime() {
+    const now = new Date();
+    const timeString = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+    const timeInput = document.getElementById('timeInput');
+    if (timeInput) timeInput.value = timeString;
+    const previewTime = document.getElementById('previewTime');
+    if (previewTime) previewTime.textContent = timeString;
+}
+
+async function addWaterEntry(amount = null) {
+    let waterAmount = amount;
+    if (!waterAmount) {
+        const slider = document.getElementById('amountSlider');
+        if (slider) {
+            waterAmount = parseInt(slider.value) / 1000;
+        } else {
+            waterAmount = 0.5;
+        }
+    }
+    
+    const purposeSelect = document.getElementById('purposeSelect');
+    const notes = purposeSelect?.options[purposeSelect.selectedIndex]?.text || 'Drinking';
+    const timeInput = document.getElementById('timeInput');
+    
+    let date = new Date();
+    if (timeInput && timeInput.value) {
+        const [hours, minutes] = timeInput.value.split(':');
+        date.setHours(parseInt(hours), parseInt(minutes));
+    }
+    
+    try {
+        const token = localStorage.getItem('token');
+        const response = await fetch(`${API_URL}/api/water`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ 
+                amount: waterAmount, 
+                date: date.toISOString(),
+                notes: notes
+            })
+        });
+        
+        if (response.ok) {
+            showNotification('Water entry added successfully!', 'success');
+            await loadWaterEntries();
+            switchPage('dashboard');
+        } else {
+            const error = await response.json();
+            showNotification(error.message || 'Failed to add entry', 'error');
+        }
+    } catch (error) {
+        console.error('Error adding entry:', error);
+        showNotification('Network error', 'error');
+    }
+}
+
+async function deleteWaterEntry(id) {
+    if (!confirm('Are you sure you want to delete this entry?')) return;
+    
+    try {
+        const token = localStorage.getItem('token');
+        const response = await fetch(`${API_URL}/api/water/${id}`, {
+            method: 'DELETE',
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        
+        if (response.ok) {
+            showNotification('Entry deleted successfully!', 'success');
+            await loadWaterEntries();
+        } else {
+            showNotification('Failed to delete entry', 'error');
+        }
+    } catch (error) {
+        console.error('Error deleting entry:', error);
+        showNotification('Network error', 'error');
+    }
+}
+
+// ===== UTILITY FUNCTIONS =====
+function switchPage(pageId) {
+    document.querySelectorAll('.page').forEach(page => {
+        page.classList.remove('active');
+    });
+    
+    const targetPage = document.getElementById(pageId);
+    if (targetPage) targetPage.classList.add('active');
+    
+    document.querySelectorAll('.nav-btn').forEach(btn => {
+        btn.classList.remove('active');
+        if (btn.getAttribute('data-page') === pageId) {
+            btn.classList.add('active');
+        }
+    });
+    
+    if (pageId === 'analytics' && typeof refreshAnalytics === 'function') {
+        refreshAnalytics();
+    }
+}
+
+function showNotification(message, type = 'info') {
+    const notificationArea = document.getElementById('notificationArea');
+    if (!notificationArea) return;
+    
+    const notification = document.createElement('div');
+    notification.className = `notification ${type}`;
+    notification.innerHTML = `
+        <i class="fas ${type === 'success' ? 'fa-check-circle' : type === 'error' ? 'fa-exclamation-circle' : 'fa-info-circle'}"></i>
+        <span>${message}</span>
+    `;
+    
+    notificationArea.appendChild(notification);
+    setTimeout(() => notification.remove(), 3000);
+}
+
+function showLoading(show) {
+    const loadingOverlay = document.getElementById('loading');
+    if (loadingOverlay) {
+        loadingOverlay.classList.toggle('hidden', !show);
+    }
+}
+
+function handleLogout() {
+    if (confirm('Are you sure you want to logout?')) {
+        localStorage.clear();
+        showNotification('Logged out successfully', 'success');
+        setTimeout(() => {
+            window.location.href = '/';
+        }, 500);
+    }
+}
+
+function exportData() {
+    if (!waterEntries || waterEntries.length === 0) {
+        showNotification('No data to export', 'error');
+        return;
+    }
+    
+    const csvRows = [['Date', 'Amount (ml)', 'Notes']];
+    waterEntries.forEach(entry => {
+        csvRows.push([
+            new Date(entry.date).toLocaleDateString(),
+            (entry.amount * 1000).toFixed(0),
+            entry.notes || 'Water intake'
+        ]);
+    });
+    
+    const csvContent = csvRows.map(row => row.join(',')).join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `aquatrack_export_${new Date().toISOString().split('T')[0]}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    
+    showNotification(`Exported ${waterEntries.length} entries!`, 'success');
+}
+
+async function clearAllData() {
+    if (!confirm('⚠️ WARNING: This will delete ALL your water tracking data. This action cannot be undone. Are you sure?')) {
+        return;
+    }
+    
+    showLoading(true);
+    try {
+        const token = localStorage.getItem('token');
+        const entries = [...waterEntries];
+        let deleted = 0;
+        
+        for (const entry of entries) {
+            const response = await fetch(`${API_URL}/api/water/${entry._id}`, {
+                method: 'DELETE',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (response.ok) deleted++;
+        }
+        
+        await loadWaterEntries();
+        showNotification(`Deleted ${deleted} entries!`, 'success');
+    } catch (error) {
+        console.error('Error clearing data:', error);
+        showNotification('Error clearing data', 'error');
+    } finally {
+        showLoading(false);
+    }
+}
+
+function refreshAnalytics() {
+    // Simple analytics refresh
+    if (waterEntries && waterEntries.length > 0) {
+        const totalMl = waterEntries.reduce((sum, e) => sum + e.amount, 0) * 1000;
+        const avgDaily = totalMl / 7;
+        
+        const avgDailyEl = document.getElementById('avgDaily');
+        if (avgDailyEl) avgDailyEl.textContent = `${Math.round(avgDaily)} ml`;
+        
+        const totalTrackedEl = document.getElementById('totalTracked');
+        if (totalTrackedEl) totalTrackedEl.textContent = `${(totalMl / 1000).toFixed(1)} L`;
+    }
+}
+
 function updatePieChart(todayEntries) {
-    const ctx = document.getElementById('pieChart').getContext('2d');
+    const ctx = document.getElementById('pieChart')?.getContext('2d');
+    if (!ctx) return;
+    
     const purposes = {};
     todayEntries.forEach(entry => {
         const purpose = entry.notes || 'Drinking';
@@ -280,9 +649,9 @@ function updatePieChart(todayEntries) {
     charts.pieChart = new Chart(ctx, {
         type: 'pie',
         data: {
-            labels: Object.keys(purposes),
+            labels: Object.keys(purposes) || ['No Data'],
             datasets: [{
-                data: Object.values(purposes),
+                data: Object.values(purposes) || [1],
                 backgroundColor: ['#0ea5e9', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6']
             }]
         },
@@ -291,7 +660,9 @@ function updatePieChart(todayEntries) {
 }
 
 function updateWeeklyChart() {
-    const ctx = document.getElementById('lineChart').getContext('2d');
+    const ctx = document.getElementById('lineChart')?.getContext('2d');
+    if (!ctx) return;
+    
     const last7Days = [];
     const labels = [];
     
@@ -324,647 +695,53 @@ function updateWeeklyChart() {
     });
 }
 
-// ===== Add Water Functions =====
-function setupPreview() {
-    const slider = document.getElementById('amountSlider');
-    const display = document.getElementById('amountDisplay');
-    const previewAmount = document.getElementById('previewAmount');
-    const purposeSelect = document.getElementById('purposeSelect');
-    const previewPurpose = document.getElementById('previewPurpose');
-    const timeInput = document.getElementById('timeInput');
-    const previewTime = document.getElementById('previewTime');
-    
-    if (slider) {
-        slider.addEventListener('input', () => {
-            const value = slider.value;
-            display.textContent = `${value} ml`;
-            previewAmount.textContent = `${value} ml`;
-        });
-    }
-    
-    if (purposeSelect) {
-        purposeSelect.addEventListener('change', () => {
-            previewPurpose.textContent = purposeSelect.options[purposeSelect.selectedIndex].text;
-        });
-    }
-    
-    if (timeInput) {
-        timeInput.addEventListener('change', () => {
-            previewTime.textContent = timeInput.value || 'Now';
-        });
-    }
-    
-    document.querySelectorAll('.preset-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-            const amount = btn.getAttribute('data-amount');
-            if (slider) slider.value = amount;
-            if (display) display.textContent = `${amount} ml`;
-            if (previewAmount) previewAmount.textContent = `${amount} ml`;
-        });
-    });
-}
-
-function setCurrentTime() {
-    const now = new Date();
-    const timeString = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
-    const timeInput = document.getElementById('timeInput');
-    if (timeInput) timeInput.value = timeString;
-    document.getElementById('previewTime').textContent = timeString;
-}
-
-async function addWaterEntry(amount = null) {
-    let waterAmount = amount;
-    if (!waterAmount) {
-        waterAmount = parseInt(document.getElementById('amountSlider')?.value || 500) / 1000;
-    }
-    
-    const notes = document.getElementById('purposeSelect')?.options[document.getElementById('purposeSelect').selectedIndex]?.text || 'Drinking';
-    const timeInput = document.getElementById('timeInput')?.value;
-    
-    let date = new Date();
-    if (timeInput) {
-        const [hours, minutes] = timeInput.split(':');
-        date.setHours(parseInt(hours), parseInt(minutes));
-    }
-    
-    try {
-        const token = localStorage.getItem('token');
-        const response = await fetch(`${API_URL}/api/water`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`
-            },
-            body: JSON.stringify({ 
-                amount: waterAmount, 
-                date: date.toISOString(),
-                notes: notes
-            })
-        });
-        
-        if (response.ok) {
-            showNotification('Water entry added successfully!', 'success');
-            await loadWaterEntries();
-            switchPage('dashboard');
-        } else {
-            const error = await response.json();
-            showNotification(error.message || 'Failed to add entry', 'error');
-        }
-    } catch (error) {
-        showNotification('Network error', 'error');
-    }
-}
-
-async function deleteWaterEntry(id) {
-    if (!confirm('Are you sure you want to delete this entry?')) return;
-    
-    try {
-        const token = localStorage.getItem('token');
-        const response = await fetch(`${API_URL}/api/water/${id}`, {
-            method: 'DELETE',
-            headers: { 'Authorization': `Bearer ${token}` }
-        });
-        
-        if (response.ok) {
-            showNotification('Entry deleted successfully!', 'success');
-            await loadWaterEntries();
-        } else {
-            showNotification('Failed to delete entry', 'error');
-        }
-    } catch (error) {
-        showNotification('Network error', 'error');
-    }
-}
-
-// ===== Analytics Functions =====
-async function refreshAnalytics() {
-    const period = parseInt(document.getElementById('periodSelect')?.value || 7);
-    const filteredEntries = waterEntries.filter(entry => {
-        const entryDate = new Date(entry.date);
-        const daysAgo = (new Date() - entryDate) / (1000 * 60 * 60 * 24);
-        return daysAgo <= period;
-    });
-    
-    const totalMl = filteredEntries.reduce((sum, e) => sum + e.amount, 0) * 1000;
-    const avgDaily = totalMl / period;
-    const goalDays = filteredEntries.filter(e => e.amount >= currentUser.dailyLimit).length;
-    const waterSaved = filteredEntries.reduce((sum, e) => sum + Math.max(0, currentUser.dailyLimit - e.amount), 0) * 1000;
-    
-    document.getElementById('avgDaily').textContent = `${Math.round(avgDaily)} ml`;
-    document.getElementById('totalTracked').textContent = `${(totalMl / 1000).toFixed(1)} L`;
-    document.getElementById('goalDays').textContent = goalDays;
-    document.getElementById('waterSaved').textContent = `${(waterSaved / 1000).toFixed(1)} L`;
-    
-    // Update analytics chart
-    const ctx = document.getElementById('analyticsChart')?.getContext('2d');
-    if (ctx) {
-        const dailyData = Array(period).fill(0);
-        filteredEntries.forEach(entry => {
-            const daysAgo = Math.floor((new Date() - new Date(entry.date)) / (1000 * 60 * 60 * 24));
-            if (daysAgo < period) {
-                dailyData[period - 1 - daysAgo] += entry.amount * 1000;
-            }
-        });
-        
-        if (charts.analyticsChart) charts.analyticsChart.destroy();
-        charts.analyticsChart = new Chart(ctx, {
-            type: 'line',
-            data: {
-                labels: Array.from({ length: period }, (_, i) => `Day ${i + 1}`),
-                datasets: [{
-                    label: 'Daily Consumption (ml)',
-                    data: dailyData,
-                    borderColor: '#0ea5e9',
-                    backgroundColor: 'rgba(14, 165, 233, 0.1)',
-                    fill: true,
-                    tension: 0.4
-                }]
-            },
-            options: { responsive: true, maintainAspectRatio: true }
-        });
-    }
-}
-
-// ===== Settings Functions =====
-async function saveDailyGoal() {
-    const newGoalMl = parseInt(document.getElementById('dailyGoalInput')?.value);
-    if (!newGoalMl || newGoalMl < 500 || newGoalMl > 10000) {
-        showNotification('Please enter a valid goal between 500 and 10000 ml', 'error');
-        return;
-    }
-    
-    const newGoalL = newGoalMl / 1000;
-    
-    try {
-        const token = localStorage.getItem('token');
-        const response = await fetch(`${API_URL}/api/auth/limit`, {
-            method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`
-            },
-            body: JSON.stringify({ dailyLimit: newGoalL })
-        });
-        
-        if (response.ok) {
-            currentUser.dailyLimit = newGoalL;
-            showNotification('Daily goal updated successfully!', 'success');
-            updateDashboard();
-        } else {
-            showNotification('Failed to update goal', 'error');
-        }
-    } catch (error) {
-        showNotification('Network error', 'error');
-    }
-}
-
-function exportData() {
-    const csv = ['Date,Amount (ml),Notes'];
-    waterEntries.forEach(entry => {
-        csv.push(`${new Date(entry.date).toLocaleDateString()},${entry.amount * 1000},${entry.notes || ''}`);
-    });
-    
-    const blob = new Blob([csv.join('\n')], { type: 'text/csv' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `aquatrack_export_${new Date().toISOString().split('T')[0]}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
-    showNotification('Data exported successfully!', 'success');
-}
-
-async function clearAllData() {
-    if (!confirm('⚠️ WARNING: This will delete ALL your water tracking data. This action cannot be undone. Are you sure?')) return;
-    
-    try {
-        const token = localStorage.getItem('token');
-        const entries = [...waterEntries];
-        for (const entry of entries) {
-            await fetch(`${API_URL}/api/water/${entry._id}`, {
-                method: 'DELETE',
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-        }
-        await loadWaterEntries();
-        showNotification('All data cleared successfully!', 'success');
-    } catch (error) {
-        showNotification('Error clearing data', 'error');
-    }
-}
-
-// ===== Utility Functions =====
-function switchPage(pageId) {
-    document.querySelectorAll('.page').forEach(page => {
-        page.classList.remove('active');
-    });
-    document.getElementById(pageId).classList.add('active');
-    
-    document.querySelectorAll('.nav-btn').forEach(btn => {
-        btn.classList.remove('active');
-        if (btn.getAttribute('data-page') === pageId) {
-            btn.classList.add('active');
-        }
-    });
-    
-    if (pageId === 'analytics') {
-        refreshAnalytics();
-    }
-}
-
-function showNotification(message, type = 'info') {
-    const notificationArea = document.getElementById('notificationArea');
-    const notification = document.createElement('div');
-    notification.className = `notification ${type}`;
-    notification.innerHTML = `
-        <i class="fas ${type === 'success' ? 'fa-check-circle' : type === 'error' ? 'fa-exclamation-circle' : 'fa-info-circle'}"></i>
-        <span>${message}</span>
-    `;
-    
-    notificationArea.appendChild(notification);
-    setTimeout(() => notification.remove(), 3000);
-}
-
-function handleLogout() {
-    localStorage.clear();
-    showNotification('Logged out successfully', 'success');
-    window.location.href = '/';
-}
-
 function setupEventListeners() {
-    document.getElementById('periodSelect')?.addEventListener('change', refreshAnalytics);
-    document.getElementById('notificationsToggle')?.addEventListener('change', (e) => {
-        if (e.target.checked) {
-            const reminderTime = document.getElementById('reminderTime').value;
-            localStorage.setItem('reminderTime', reminderTime);
-            showNotification(`Daily reminders set for ${reminderTime}`, 'success');
-        } else {
-            localStorage.removeItem('reminderTime');
-            showNotification('Reminders disabled', 'info');
-        }
-    });
-    
-    const savedReminderTime = localStorage.getItem('reminderTime');
-    if (savedReminderTime) {
-        document.getElementById('reminderTime').value = savedReminderTime;
-        document.getElementById('notificationsToggle').checked = true;
-    }
-    
-    document.querySelectorAll('.theme-btn').forEach(btn => {
+    // Quick add buttons
+    document.querySelectorAll('.quick-btn').forEach(btn => {
         btn.addEventListener('click', () => {
-            const theme = btn.getAttribute('data-theme');
-            document.documentElement.setAttribute('data-theme', theme);
-            localStorage.setItem('theme', theme);
-            document.querySelectorAll('.theme-btn').forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
+            const amount = parseInt(btn.getAttribute('data-amount'));
+            if (amount) addWaterEntry(amount / 1000);
         });
     });
-}
-// ===== GOAL SETTINGS FUNCTIONS =====
-
-// Initialize goal settings
-function initGoalSettings() {
-    const goalSlider = document.getElementById('dailyGoalSlider');
-    const goalInput = document.getElementById('dailyGoalInput');
-    const goalDisplay = document.getElementById('goalValueDisplay');
     
-    if (goalSlider && currentUser) {
-        const currentGoalMl = currentUser.dailyLimit * 1000;
-        goalSlider.value = currentGoalMl;
-        goalInput.value = currentGoalMl;
-        if (goalDisplay) goalDisplay.textContent = currentGoalMl;
-        
-        // Slider event
-        goalSlider.addEventListener('input', function() {
-            const value = parseInt(this.value);
-            goalInput.value = value;
-            if (goalDisplay) goalDisplay.textContent = value;
+    // Floating add button
+    const floatingBtn = document.getElementById('floatingAddBtn');
+    if (floatingBtn) {
+        floatingBtn.addEventListener('click', () => switchPage('add-water'));
+    }
+    
+    // Navigation buttons
+    document.querySelectorAll('.nav-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const page = btn.getAttribute('data-page');
+            if (page) switchPage(page);
         });
-        
-        // Number input event
-        goalInput.addEventListener('input', function() {
-            let value = parseInt(this.value);
-            if (isNaN(value)) value = 2000;
-            value = Math.min(5000, Math.max(500, value));
-            goalSlider.value = value;
-            if (goalDisplay) goalDisplay.textContent = value;
-        });
-    }
-}
-
-// Adjust goal by increment
-function adjustGoal(increment) {
-    const goalInput = document.getElementById('dailyGoalInput');
-    if (goalInput) {
-        let newValue = parseInt(goalInput.value) + increment;
-        newValue = Math.min(5000, Math.max(500, newValue));
-        goalInput.value = newValue;
-        
-        const goalSlider = document.getElementById('dailyGoalSlider');
-        const goalDisplay = document.getElementById('goalValueDisplay');
-        if (goalSlider) goalSlider.value = newValue;
-        if (goalDisplay) goalDisplay.textContent = newValue;
-    }
-}
-
-// Save daily goal to backend
-async function saveDailyGoal() {
-    const goalInput = document.getElementById('dailyGoalInput');
-    const newGoalMl = parseInt(goalInput?.value);
-    
-    if (!newGoalMl || newGoalMl < 500 || newGoalMl > 5000) {
-        showNotification('Please enter a valid goal between 500 and 5000 ml', 'error');
-        return;
-    }
-    
-    const newGoalL = newGoalMl / 1000;
-    
-    // Show saving state
-    const saveBtn = document.getElementById('saveGoalBtn');
-    const originalText = saveBtn.innerHTML;
-    saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
-    saveBtn.disabled = true;
-    
-    try {
-        const token = localStorage.getItem('token');
-        const response = await fetch(`${API_URL}/api/auth/limit`, {
-            method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`
-            },
-            body: JSON.stringify({ dailyLimit: newGoalL })
-        });
-        
-        const data = await response.json();
-        
-        if (response.ok) {
-            currentUser.dailyLimit = newGoalL;
-            showNotification(`Daily goal updated to ${newGoalMl} ml!`, 'success');
-            
-            // Update dashboard displays
-            document.getElementById('dailyGoal').textContent = `${newGoalMl} ml`;
-            document.getElementById('goalAmount').textContent = `${newGoalMl} ml`;
-            
-            // Update progress bar
-            updateDashboard();
-        } else {
-            showNotification(data.message || 'Failed to update goal', 'error');
-        }
-    } catch (error) {
-        console.error('Error saving goal:', error);
-        showNotification('Network error. Please try again.', 'error');
-    } finally {
-        saveBtn.innerHTML = originalText;
-        saveBtn.disabled = false;
-    }
-}
-
-// ===== NOTIFICATION FUNCTIONS =====
-
-// Initialize notification settings
-function initNotificationSettings() {
-    const notificationToggle = document.getElementById('notificationsToggle');
-    const reminderContainer = document.getElementById('reminderTimeContainer');
-    const reminderTime = document.getElementById('reminderTime');
-    
-    if (notificationToggle) {
-        const savedNotifications = localStorage.getItem('notificationsEnabled') === 'true';
-        notificationToggle.checked = savedNotifications;
-        
-        if (reminderContainer) {
-            reminderContainer.style.display = savedNotifications ? 'block' : 'none';
-        }
-        
-        // Load saved reminder time
-        const savedReminderTime = localStorage.getItem('reminderTime');
-        if (savedReminderTime && reminderTime) {
-            reminderTime.value = savedReminderTime;
-        } else if (reminderTime) {
-            reminderTime.value = '09:00';
-        }
-        
-        notificationToggle.addEventListener('change', function() {
-            const enabled = this.checked;
-            localStorage.setItem('notificationsEnabled', enabled);
-            
-            if (reminderContainer) {
-                reminderContainer.style.display = enabled ? 'block' : 'none';
-            }
-            
-            if (enabled) {
-                const time = reminderTime.value;
-                scheduleDailyReminder(time);
-                showNotification(`Daily reminders enabled for ${time}`, 'success');
-            } else {
-                cancelDailyReminder();
-                showNotification('Reminders disabled', 'info');
-            }
-        });
-        
-        if (reminderTime) {
-            reminderTime.addEventListener('change', function() {
-                if (notificationToggle.checked) {
-                    const time = this.value;
-                    localStorage.setItem('reminderTime', time);
-                    scheduleDailyReminder(time);
-                    showNotification(`Reminder time updated to ${time}`, 'success');
-                }
-            });
-        }
-    }
-}
-
-// Schedule daily reminder
-let reminderInterval = null;
-
-function scheduleDailyReminder(time) {
-    // Clear existing reminder
-    if (reminderInterval) {
-        clearInterval(reminderInterval);
-    }
-    
-    const [hours, minutes] = time.split(':');
-    const now = new Date();
-    let reminderTime = new Date();
-    reminderTime.setHours(parseInt(hours), parseInt(minutes), 0, 0);
-    
-    if (reminderTime <= now) {
-        reminderTime.setDate(reminderTime.getDate() + 1);
-    }
-    
-    const timeUntilReminder = reminderTime - now;
-    
-    setTimeout(() => {
-        sendNotification();
-        // Set interval for daily reminders
-        reminderInterval = setInterval(sendNotification, 24 * 60 * 60 * 1000);
-    }, timeUntilReminder);
-}
-
-function cancelDailyReminder() {
-    if (reminderInterval) {
-        clearInterval(reminderInterval);
-        reminderInterval = null;
-    }
-}
-
-function sendNotification() {
-    if (Notification.permission === 'granted') {
-        new Notification('💧 AquaTrack Reminder', {
-            body: "Time to track your water consumption! Don't forget to stay hydrated.",
-            icon: '/favicon.ico'
-        });
-        showNotification('Daily reminder: Time to log your water intake!', 'info');
-    } else if (Notification.permission !== 'denied') {
-        Notification.requestPermission().then(permission => {
-            if (permission === 'granted') {
-                sendNotification();
-            }
-        });
-    }
-}
-
-function testNotification() {
-    if (Notification.permission === 'granted') {
-        new Notification('💧 AquaTrack Test', {
-            body: "This is a test notification! Your reminders are working.",
-            icon: '/favicon.ico'
-        });
-        showNotification('Test notification sent!', 'success');
-    } else if (Notification.permission !== 'denied') {
-        Notification.requestPermission().then(permission => {
-            if (permission === 'granted') {
-                testNotification();
-            }
-        });
-    } else {
-        showNotification('Please enable notifications in your browser settings', 'error');
-    }
-}
-
-// ===== THEME FUNCTIONS =====
-
-// Set theme
-function setTheme(theme) {
-    document.documentElement.setAttribute('data-theme', theme);
-    localStorage.setItem('theme', theme);
-    
-    // Update active button
-    document.querySelectorAll('.theme-option').forEach(btn => {
-        btn.classList.remove('active');
-        if (btn.getAttribute('data-theme') === theme) {
-            btn.classList.add('active');
-        }
     });
     
-    // Update theme toggle button in header
-    const themeToggle = document.getElementById('themeToggle');
-    if (themeToggle) {
-        themeToggle.innerHTML = theme === 'dark' ? '<i class="fas fa-sun"></i>' : '<i class="fas fa-moon"></i>';
+    // Logout button
+    const logoutBtn = document.getElementById('logoutBtn');
+    if (logoutBtn) {
+        logoutBtn.addEventListener('click', handleLogout);
     }
     
-    showNotification(`${theme === 'dark' ? 'Dark' : 'Light'} mode activated`, 'success');
-}
-
-// Initialize theme
-function initTheme() {
-    const savedTheme = localStorage.getItem('theme') || 'light';
-    setTheme(savedTheme);
-}
-
-// ===== DATA MANAGEMENT FUNCTIONS =====
-
-// Export data as CSV
-function exportData() {
-    if (!waterEntries || waterEntries.length === 0) {
-        showNotification('No data to export', 'error');
-        return;
-    }
-    
-    const csvRows = [
-        ['Date', 'Amount (ml)', 'Notes', 'Time']
-    ];
-    
-    waterEntries.forEach(entry => {
-        const date = new Date(entry.date);
-        csvRows.push([
-            date.toLocaleDateString(),
-            (entry.amount * 1000).toFixed(0),
-            entry.notes || 'Water intake',
-            date.toLocaleTimeString()
-        ]);
-    });
-    
-    const csvContent = csvRows.map(row => row.join(',')).join('\n');
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `aquatrack_export_${new Date().toISOString().split('T')[0]}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
-    
-    showNotification(`Exported ${waterEntries.length} entries successfully!`, 'success');
-}
-
-// Clear all data
-async function clearAllData() {
-    if (!confirm('⚠️ WARNING: This will delete ALL your water tracking data. This action cannot be undone. Are you absolutely sure?')) {
-        return;
-    }
-    
-    if (!confirm('Last chance! Are you sure you want to delete everything?')) {
-        return;
-    }
-    
-    showLoading(true);
-    
-    try {
-        const token = localStorage.getItem('token');
-        const entries = [...waterEntries];
-        let deleted = 0;
-        
-        for (const entry of entries) {
-            const response = await fetch(`${API_URL}/api/water/${entry._id}`, {
-                method: 'DELETE',
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-            
-            if (response.ok) {
-                deleted++;
-            }
-        }
-        
-        await loadWaterEntries();
-        showNotification(`Successfully deleted ${deleted} entries!`, 'success');
-        
-        // Refresh dashboard
-        if (typeof updateDashboard === 'function') {
-            updateDashboard();
-        }
-        
-        if (typeof refreshAnalytics === 'function') {
-            refreshAnalytics();
-        }
-        
-    } catch (error) {
-        console.error('Error clearing data:', error);
-        showNotification('Error clearing data. Please try again.', 'error');
-    } finally {
-        showLoading(false);
+    // Add water button
+    const addWaterBtn = document.querySelector('.btn-add-water');
+    if (addWaterBtn) {
+        addWaterBtn.addEventListener('click', () => addWaterEntry());
     }
 }
 
-// Update the initDashboard function to include settings initialization
-// Add this to your existing initDashboard function:
-async function initDashboard() {
-    // ... existing code ...
-    
-    // Initialize settings
-    initGoalSettings();
-    initNotificationSettings();
-    initTheme();
-    
-    // ... rest of existing code ...
-}
+// Make functions globally available
+window.addWaterEntry = addWaterEntry;
+window.deleteWaterEntry = deleteWaterEntry;
+window.saveDailyGoal = saveDailyGoal;
+window.adjustGoal = adjustGoal;
+window.testNotification = testNotification;
+window.setTheme = setTheme;
+window.exportData = exportData;
+window.clearAllData = clearAllData;
+window.setCurrentTime = setCurrentTime;
+window.handleLogout = handleLogout;
+window.switchPage = switchPage;
+
+console.log('✅ All functions registered');
