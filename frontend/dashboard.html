@@ -310,64 +310,138 @@ document.addEventListener('DOMContentLoaded', () => {
                 </div>
             </section>
 
-            <!-- Settings Page -->
-            <section id="settings" class="page">
-                <div class="settings-container">
-                    <h2><i class="fas fa-cog"></i> Settings</h2>
+         <!-- Settings Page - COMPLETE FIXED VERSION -->
+<section id="settings" class="page">
+    <div class="settings-container">
+        <h2><i class="fas fa-cog"></i> Settings</h2>
+        
+        <!-- Daily Goal Settings - IMPROVED -->
+        <div class="setting-group glass-effect">
+            <h3><i class="fas fa-bullseye"></i> Daily Water Goal</h3>
+            <div class="setting-item">
+                <label class="setting-label">Your Daily Hydration Target</label>
+                <div class="goal-input-container">
+                    <!-- Visual Slider -->
+                    <div class="goal-slider-wrapper">
+                        <div class="slider-value-display">
+                            <span id="goalValueDisplay" class="goal-value-large">2000</span>
+                            <span class="goal-unit-large">ml</span>
+                        </div>
+                        <input type="range" id="dailyGoalSlider" class="goal-slider" min="500" max="5000" step="100" value="2000">
+                        <div class="slider-markers">
+                            <span>500ml</span>
+                            <span>2000ml</span>
+                            <span>3500ml</span>
+                            <span>5000ml</span>
+                        </div>
+                    </div>
                     
-                    <div class="setting-group glass-effect">
-                        <h3><i class="fas fa-bullseye"></i> Daily Goal</h3>
-                        <div class="setting-item">
-                            <label>Daily Water Goal (ml)</label>
-                            <div class="goal-input-group">
-                                <input type="number" id="dailyGoalInput" min="500" max="10000" step="100">
-                                <button class="btn-save" onclick="saveDailyGoal()">
-                                    <i class="fas fa-save"></i> Save
-                                </button>
-                            </div>
+                    <!-- Number Input -->
+                    <div class="goal-number-input">
+                        <div class="input-with-buttons">
+                            <button class="number-btn" onclick="adjustGoal(-100)">-</button>
+                            <input type="number" id="dailyGoalInput" class="goal-number-field" min="500" max="5000" step="100" value="2000">
+                            <button class="number-btn" onclick="adjustGoal(100)">+</button>
                         </div>
+                        <button class="btn-save-goal" id="saveGoalBtn" onclick="saveDailyGoal()">
+                            <i class="fas fa-save"></i> Update Goal
+                        </button>
                     </div>
-
-                    <div class="setting-group glass-effect">
-                        <h3><i class="fas fa-bell"></i> Notifications</h3>
-                        <div class="setting-item">
-                            <label class="toggle-switch">
-                                <input type="checkbox" id="notificationsToggle">
-                                <span class="toggle-slider"></span>
-                                <span class="toggle-label">Enable Daily Reminders</span>
-                            </label>
-                        </div>
-                        <div class="setting-item">
-                            <label>Reminder Time</label>
-                            <input type="time" id="reminderTime">
-                        </div>
-                    </div>
-
-                    <div class="setting-group glass-effect">
-                        <h3><i class="fas fa-palette"></i> Appearance</h3>
-                        <div class="theme-buttons">
-                            <button class="theme-btn active" data-theme="light">
-                                <i class="fas fa-sun"></i> Light
-                            </button>
-                            <button class="theme-btn" data-theme="dark">
-                                <i class="fas fa-moon"></i> Dark
-                            </button>
-                        </div>
-                    </div>
-
-                    <div class="setting-group glass-effect">
-                        <h3><i class="fas fa-database"></i> Data Management</h3>
-                        <div class="data-actions">
-                            <button class="btn-secondary" onclick="exportData()">
-                                <i class="fas fa-download"></i> Export CSV
-                            </button>
-                            <button class="btn-danger" onclick="clearAllData()">
-                                <i class="fas fa-trash"></i> Clear All Data
-                            </button>
+                    
+                    <div class="goal-info-card">
+                        <i class="fas fa-info-circle"></i>
+                        <div class="goal-info-text">
+                            <strong>Recommended intake:</strong> 2000-3000 ml (2-3 liters) per day
                         </div>
                     </div>
                 </div>
-            </section>
+            </div>
+        </div>
+
+        <!-- Notifications Settings - FIXED LAYOUT -->
+        <div class="setting-group glass-effect">
+            <h3><i class="fas fa-bell"></i> Notifications</h3>
+            <div class="notification-card">
+                <div class="notification-header">
+                    <div class="notification-info">
+                        <i class="fas fa-bell"></i>
+                        <div>
+                            <strong>Daily Reminders</strong>
+                            <p>Get notified to track your water consumption</p>
+                        </div>
+                    </div>
+                    <label class="toggle-switch-modern">
+                        <input type="checkbox" id="notificationsToggle">
+                        <span class="toggle-slider-modern"></span>
+                    </label>
+                </div>
+                
+                <div id="reminderTimeContainer" class="reminder-time-container" style="display: none;">
+                    <div class="time-picker-wrapper">
+                        <i class="fas fa-clock"></i>
+                        <input type="time" id="reminderTime" class="time-picker">
+                        <button class="btn-test" onclick="testNotification()">
+                            <i class="fas fa-bell"></i> Test
+                        </button>
+                    </div>
+                    <div class="reminder-info">
+                        <i class="fas fa-info-circle"></i>
+                        <small>You'll receive a daily reminder at this time</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Appearance Settings -->
+        <div class="setting-group glass-effect">
+            <h3><i class="fas fa-palette"></i> Appearance</h3>
+            <div class="theme-selector">
+                <button class="theme-option active" data-theme="light" onclick="setTheme('light')">
+                    <i class="fas fa-sun"></i>
+                    <span>Light Mode</span>
+                </button>
+                <button class="theme-option" data-theme="dark" onclick="setTheme('dark')">
+                    <i class="fas fa-moon"></i>
+                    <span>Dark Mode</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Data Management -->
+        <div class="setting-group glass-effect">
+            <h3><i class="fas fa-database"></i> Data Management</h3>
+            <div class="data-actions-grid">
+                <button class="action-btn export-btn" onclick="exportData()">
+                    <i class="fas fa-download"></i>
+                    <span>Export CSV</span>
+                </button>
+                <button class="action-btn delete-btn" onclick="clearAllData()">
+                    <i class="fas fa-trash-alt"></i>
+                    <span>Delete All Data</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- App Info -->
+        <div class="setting-group glass-effect">
+            <h3><i class="fas fa-info-circle"></i> About</h3>
+            <div class="app-info-card">
+                <div class="app-logo-small">
+                    <i class="fas fa-tint"></i>
+                </div>
+                <div class="app-details">
+                    <h4>AquaTrack</h4>
+                    <p>Smart Water Tracker - Version 2.0</p>
+                    <p>Track, analyze, and reduce your daily water consumption.</p>
+                    <div class="app-badge">
+                        <i class="fas fa-heart"></i>
+                        <span>Made with care for a sustainable future</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
         </main>
 
         <!-- Notification Area -->
