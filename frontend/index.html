@@ -3,10 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>💧Smart Water Tracker</title>
+    <title>AquaTrack - Smart Water Tracker</title>
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
     <!-- Loading Screen -->
@@ -49,13 +48,13 @@
                     <i class="fas fa-lock"></i>
                     <input type="password" id="loginPassword" placeholder="Password" autocomplete="current-password">
                 </div>
-                <button class="btn-primary" onclick="handleLogin()">
+                <button class="btn-primary" id="loginBtn">
                     <i class="fas fa-sign-in-alt"></i>
                     <span>Login</span>
                 </button>
                 <p class="auth-switch">
                     New to AquaTrack?
-                    <button onclick="showSignup()" class="link-btn">Create Account</button>
+                    <button id="showSignupBtn" class="link-btn">Create Account</button>
                 </p>
             </div>
 
@@ -73,18 +72,18 @@
                     <i class="fas fa-lock"></i>
                     <input type="password" id="signupPassword" placeholder="Password (min 6 characters)">
                 </div>
-                <button class="btn-primary" onclick="handleSignup()">
+                <button class="btn-primary" id="signupBtn">
                     <i class="fas fa-user-plus"></i>
                     <span>Sign Up</span>
                 </button>
                 <p class="auth-switch">
                     Already have an account?
-                    <button onclick="showLogin()" class="link-btn">Login</button>
+                    <button id="showLoginBtn" class="link-btn">Login</button>
                 </p>
             </div>
         </div>
     </div>
 
-    <script src="script.js"></script>
+    <script src="auth.js"></script>
 </body>
 </html>
