@@ -89,30 +89,129 @@
                     <div class="preview-card glass-effect"><h3><i class="fas fa-eye"></i> Preview</h3><div class="preview-content"><div class="preview-item"><span>Amount:</span><strong id="previewAmount">500 ml</strong></div><div class="preview-item"><span>Purpose:</span><strong id="previewPurpose">Drinking</strong></div><div class="preview-item"><span>Time:</span><strong id="previewTime">Now</strong></div></div></div>
                 </div>
             </section>
+            <!-- Analytics Page - COMPLETELY FIXED -->
+<section id="analytics" class="page">
+    <div class="analytics-container">
+        <h2><i class="fas fa-chart-line"></i> Water Consumption Analytics</h2>
+        
+        <!-- Controls -->
+        <div class="analytics-controls glass-effect">
+            <div class="period-selector">
+                <label><i class="fas fa-calendar-alt"></i> Time Period</label>
+                <select id="periodSelect">
+                    <option value="7">Last 7 Days</option>
+                    <option value="14">Last 14 Days</option>
+                    <option value="30">Last 30 Days</option>
+                    <option value="90">Last 90 Days</option>
+                </select>
+            </div>
+            <button class="btn-refresh" onclick="refreshAnalytics()">
+                <i class="fas fa-sync-alt"></i> Refresh Data
+            </button>
+        </div>
 
-            <!-- Analytics Page -->
-            <section id="analytics" class="page">
-                <div class="analytics-container"><h2><i class="fas fa-chart-line"></i> Analytics</h2>
-                    <div class="analytics-controls glass-effect"><select id="periodSelect"><option value="7">Last 7 Days</option><option value="30">Last 30 Days</option><option value="90">Last 90 Days</option></select><button class="btn-secondary" onclick="refreshAnalytics()"><i class="fas fa-sync-alt"></i> Refresh</button></div>
-                    <div class="analytics-stats"><div class="analytic-card glass-effect"><h3>Average Daily</h3><p class="stat-value" id="avgDaily">0 ml</p></div><div class="analytic-card glass-effect"><h3>Total Tracked</h3><p class="stat-value" id="totalTracked">0 L</p></div><div class="analytic-card glass-effect"><h3>Goal Days</h3><p class="stat-value" id="goalDays">0</p></div><div class="analytic-card glass-effect"><h3>Water Saved</h3><p class="stat-value" id="waterSaved">0 L</p></div></div>
-                    <div class="analytics-charts"><div class="chart-container glass-effect"><h3>Consumption Trend</h3><canvas id="analyticsChart"></canvas></div><div class="chart-container glass-effect"><h3>Usage Distribution</h3><canvas id="distributionChart"></canvas></div></div>
+        <!-- Stats Cards - SPACIOUS GRID -->
+        <div class="analytics-stats-grid">
+            <div class="analytic-card glass-effect">
+                <div class="analytic-icon">
+                    <i class="fas fa-chart-simple"></i>
                 </div>
-            </section>
+                <div class="analytic-info">
+                    <h3>Average Daily</h3>
+                    <p class="stat-value" id="avgDaily">0 ml</p>
+                    <span class="stat-trend">per day</span>
+                </div>
+            </div>
+            
+            <div class="analytic-card glass-effect">
+                <div class="analytic-icon">
+                    <i class="fas fa-water"></i>
+                </div>
+                <div class="analytic-info">
+                    <h3>Total Tracked</h3>
+                    <p class="stat-value" id="totalTracked">0 L</p>
+                    <span class="stat-trend">lifetime consumption</span>
+                </div>
+            </div>
+            
+            <div class="analytic-card glass-effect">
+                <div class="analytic-icon">
+                    <i class="fas fa-trophy"></i>
+                </div>
+                <div class="analytic-info">
+                    <h3>Goal Days</h3>
+                    <p class="stat-value" id="goalDays">0</p>
+                    <span class="stat-trend">days met goal</span>
+                </div>
+            </div>
+            
+            <div class="analytic-card glass-effect">
+                <div class="analytic-icon">
+                    <i class="fas fa-leaf"></i>
+                </div>
+                <div class="analytic-info">
+                    <h3>Water Saved</h3>
+                    <p class="stat-value" id="waterSaved">0 L</p>
+                    <span class="stat-trend">vs. recommended</span>
+                </div>
+            </div>
+        </div>
 
-            <!-- Settings Page -->
-            <section id="settings" class="page">
-                <div class="settings-container"><h2><i class="fas fa-cog"></i> Settings</h2>
-                    <div class="setting-group glass-effect"><h3><i class="fas fa-bullseye"></i> Daily Water Goal</h3><div class="setting-item"><div class="goal-input-container"><div class="goal-slider-wrapper"><div class="slider-value-display"><span id="goalValueDisplay" class="goal-value-large">2000</span><span class="goal-unit-large">ml</span></div><input type="range" id="dailyGoalSlider" class="goal-slider" min="500" max="5000" step="100" value="2000"><div class="slider-markers"><span>500ml</span><span>2000ml</span><span>3500ml</span><span>5000ml</span></div></div><div class="goal-number-input"><div class="input-with-buttons"><button class="number-btn" onclick="adjustGoal(-100)">-</button><input type="number" id="dailyGoalInput" class="goal-number-field" min="500" max="5000" step="100" value="2000"><button class="number-btn" onclick="adjustGoal(100)">+</button></div><button class="btn-save-goal" id="saveGoalBtn" onclick="saveDailyGoal()"><i class="fas fa-save"></i> Update Goal</button></div><div class="goal-info-card"><i class="fas fa-info-circle"></i><div class="goal-info-text"><strong>Recommended intake:</strong> 2000-3000 ml (2-3 liters) per day</div></div></div></div></div>
-                    
-                    <div class="setting-group glass-effect"><h3><i class="fas fa-bell"></i> Notifications</h3><div class="notification-card"><div class="notification-header"><div class="notification-info"><i class="fas fa-bell"></i><div><strong>Daily Reminders</strong><p>Get notified to track your water consumption</p></div></div><label class="toggle-switch-modern"><input type="checkbox" id="notificationsToggle"><span class="toggle-slider-modern"></span></label></div><div id="reminderTimeContainer" class="reminder-time-container" style="display: none;"><div class="time-picker-wrapper"><i class="fas fa-clock"></i><input type="time" id="reminderTime" class="time-picker"><button class="btn-test" onclick="testNotification()"><i class="fas fa-bell"></i> Test</button></div><div class="reminder-info"><i class="fas fa-info-circle"></i><small>You'll receive a daily reminder at this time</small></div></div></div></div>
-                    
-                    <div class="setting-group glass-effect"><h3><i class="fas fa-palette"></i> Appearance</h3><div class="theme-selector"><button class="theme-option active" data-theme="light" onclick="setTheme('light')"><i class="fas fa-sun"></i><span>Light Mode</span></button><button class="theme-option" data-theme="dark" onclick="setTheme('dark')"><i class="fas fa-moon"></i><span>Dark Mode</span></button></div></div>
-                    
-                    <div class="setting-group glass-effect"><h3><i class="fas fa-database"></i> Data Management</h3><div class="data-actions-grid"><button class="action-btn export-btn" onclick="exportData()"><i class="fas fa-download"></i><span>Export CSV</span></button><button class="action-btn delete-btn" onclick="clearAllData()"><i class="fas fa-trash-alt"></i><span>Delete All Data</span></button></div></div>
-                    
-                    <div class="setting-group glass-effect"><h3><i class="fas fa-info-circle"></i> About</h3><div class="app-info-card"><div class="app-logo-small"><i class="fas fa-tint"></i></div><div class="app-details"><h4>AquaTrack</h4><p>Smart Water Tracker - Version 2.0</p><p>Track, analyze, and reduce your daily water consumption.</p><div class="app-badge"><i class="fas fa-heart"></i><span>Made with care for a sustainable future</span></div></div></div></div>
+        <!-- Main Charts - LARGE & VISIBLE -->
+        <div class="analytics-main-charts">
+            <div class="chart-card glass-effect">
+                <div class="chart-header">
+                    <h3><i class="fas fa-chart-line"></i> Consumption Trend</h3>
+                    <div class="chart-legend">
+                        <span class="legend-dot" style="background: var(--primary);"></span>
+                        <span>Daily Water Intake (ml)</span>
+                    </div>
                 </div>
-            </section>
+                <div class="chart-wrapper">
+                    <canvas id="analyticsChart"></canvas>
+                </div>
+                <div class="chart-insight">
+                    <i class="fas fa-lightbulb"></i>
+                    <span id="trendInsight">Loading insights...</span>
+                </div>
+            </div>
+            
+            <div class="chart-card glass-effect">
+                <div class="chart-header">
+                    <h3><i class="fas fa-chart-pie"></i> Usage Distribution</h3>
+                    <div class="chart-legend">
+                        <span class="legend-dot" style="background: #ff9f0a;"></span>
+                        <span>By Purpose</span>
+                    </div>
+                </div>
+                <div class="chart-wrapper">
+                    <canvas id="distributionChart"></canvas>
+                </div>
+                <div class="chart-insight">
+                    <i class="fas fa-info-circle"></i>
+                    <span>Most consumption: <strong id="topPurpose">Loading...</strong></span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Weekly Breakdown Table -->
+        <div class="weekly-breakdown glass-effect">
+            <h3><i class="fas fa-table"></i> Weekly Breakdown</h3>
+            <div class="breakdown-table" id="weeklyBreakdown">
+                <div class="breakdown-header">
+                    <span>Day</span>
+                    <span>Amount</span>
+                    <span>Progress</span>
+                </div>
+                <div class="breakdown-body">
+                    <div class="breakdown-item">Loading data...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+          
         </main>
 
         <div id="notificationArea" class="notification-area"></div>
