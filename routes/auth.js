@@ -145,3 +145,34 @@ router.post('/register', async (req, res) => {
     });
   }
 });
+// In routes/auth.js - Update limit endpoint
+router.put('/limit', protect, async (req, res) => {
+    try {
+        const { dailyLimit } = req.body;
+        
+        if (!dailyLimit || dailyLimit < 0.5 || dailyLimit > 10) {
+            return res.status(400).json({ 
+                success: false,
+                message: 'Limit must be between 0.5 and 10 liters' 
+            });
+        }
+
+        const user = await User.findByIdAndUpdate(
+            req.user.id,
+            { dailyLimit },
+            { new: true, runValidators: true }
+        );
+
+        res.json({
+            success: true,
+            message: 'Daily limit updated successfully',
+            dailyLimit: user.dailyLimit
+        });
+    } catch (error) {
+        console.error('Update limit error:', error);
+        res.status(500).json({ 
+            success: false,
+            message: 'Server error. Please try again.' 
+        });
+    }
+});
