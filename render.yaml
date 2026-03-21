@@ -1,0 +1,58 @@
+# render.yaml - Blueprint for Render Deployment
+
+services:
+  # Backend API Service
+  - type: web
+    name: smart-water-tracker
+    runtime: node
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 5000
+      - key: MONGODB_URI
+        sync: false  # This means you'll need to set it manually in Render dashboard
+      - key: JWT_SECRET
+        sync: false
+      - key: JWT_EXPIRE
+        value: 7d
+    
+    # Health check endpoint
+    healthCheckPath: /
+    
+    # Auto-deploy on git push
+    autoDeploy: true
+    
+    # Build filters
+    buildFilter:
+      paths:
+        - backend/**
+        - public/**
+        - package.json
+        - server.js
+        - models/**
+        - routes/**
+        - middleware/**
+    
+    # Headers for security
+    headers:
+      - path: /*
+        name: X-Frame-Options
+        value: DENY
+      - path: /*
+        name: X-Content-Type-Options
+        value: nosniff
+      - path: /*
+        name: X-XSS-Protection
+        value: 1; mode=block
+
+  # Optional: Database service (if using Render's PostgreSQL)
+  # Uncomment if you want to use Render's built-in PostgreSQL instead of MongoDB Atlas
+  # - type: database
+  #   name: water-tracker-db
+  #   plan: free
+  #   databaseName: water_tracker
+  #   ipAllowList: []  # Allow all IPs (for development)
