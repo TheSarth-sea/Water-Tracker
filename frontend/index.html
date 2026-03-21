@@ -1,95 +1,90 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Smart Water Tracker - Login</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>💧Smart Water Tracker</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
-<body class="bg-gradient-to-br from-blue-50 to-cyan-50 min-h-screen">
-  <div class="min-h-screen flex items-center justify-center p-4">
-    <div class="max-w-md w-full bg-white/90 backdrop-blur-sm rounded-2xl shadow-xl p-8">
-      <div class="text-center mb-8">
-        <div class="w-20 h-20 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-2xl flex items-center justify-center mx-auto mb-4">
-          <i class="fas fa-tint text-white text-3xl"></i>
+<body>
+    <!-- Loading Screen -->
+    <div class="loading-screen" id="loadingScreen">
+        <div class="loading-content">
+            <div class="water-drop-animation">
+                <div class="ripple"></div>
+                <div class="ripple"></div>
+                <div class="ripple"></div>
+                <i class="fas fa-tint"></i>
+            </div>
+            <h1>AquaTrack</h1>
+            <p>Making every drop count...</p>
         </div>
-        <h1 class="text-2xl font-bold text-gray-800">Smart Water Tracker</h1>
-        <p class="text-gray-600 mt-2">Track and reduce water consumption</p>
-      </div>
-
-      <div id="loginForm">
-        <h2 class="text-xl font-semibold mb-4">Login</h2>
-        <input type="email" id="loginEmail" placeholder="Email" class="w-full p-3 border rounded-lg mb-3">
-        <input type="password" id="loginPassword" placeholder="Password" class="w-full p-3 border rounded-lg mb-4">
-        <button onclick="login()" class="w-full bg-blue-600 text-white p-3 rounded-lg hover:bg-blue-700">Login</button>
-        <p class="text-center mt-4">New user? <button onclick="showSignup()" class="text-blue-600">Sign Up</button></p>
-      </div>
-
-      <div id="signupForm" style="display:none">
-        <h2 class="text-xl font-semibold mb-4">Sign Up</h2>
-        <input type="text" id="signupName" placeholder="Full Name" class="w-full p-3 border rounded-lg mb-3">
-        <input type="email" id="signupEmail" placeholder="Email" class="w-full p-3 border rounded-lg mb-3">
-        <input type="password" id="signupPassword" placeholder="Password" class="w-full p-3 border rounded-lg mb-4">
-        <button onclick="signup()" class="w-full bg-blue-600 text-white p-3 rounded-lg hover:bg-blue-700">Sign Up</button>
-        <p class="text-center mt-4">Already have an account? <button onclick="showLogin()" class="text-blue-600">Login</button></p>
-      </div>
     </div>
-  </div>
 
-  <script>
-    const API_URL = window.location.origin;
+    <!-- Main App -->
+    <div class="app-container" id="appContainer">
+        <!-- Background Effects -->
+        <div class="bg-gradient"></div>
+        <div class="water-waves"></div>
+        
+        <!-- Auth Container (Login/Signup) -->
+        <div class="auth-container glass-effect" id="authContainer">
+            <div class="auth-header">
+                <div class="logo-icon-large">
+                    <i class="fas fa-tint"></i>
+                </div>
+                <h2 id="authTitle">Welcome Back</h2>
+                <p id="authSubtitle">Track your water consumption journey</p>
+            </div>
 
-    async function login() {
-      const email = document.getElementById('loginEmail').value;
-      const password = document.getElementById('loginPassword').value;
-      
-      const res = await fetch(`${API_URL}/api/auth/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password })
-      });
-      
-      const data = await res.json();
-      if (res.ok) {
-        localStorage.setItem('token', data.token);
-        localStorage.setItem('user', JSON.stringify(data.user));
-        window.location.href = '/dashboard.html';
-      } else {
-        alert(data.message);
-      }
-    }
+            <!-- Login Form -->
+            <div id="loginForm" class="auth-form">
+                <div class="input-group-glass">
+                    <i class="fas fa-envelope"></i>
+                    <input type="email" id="loginEmail" placeholder="Email address" autocomplete="email">
+                </div>
+                <div class="input-group-glass">
+                    <i class="fas fa-lock"></i>
+                    <input type="password" id="loginPassword" placeholder="Password" autocomplete="current-password">
+                </div>
+                <button class="btn-primary" onclick="handleLogin()">
+                    <i class="fas fa-sign-in-alt"></i>
+                    <span>Login</span>
+                </button>
+                <p class="auth-switch">
+                    New to AquaTrack?
+                    <button onclick="showSignup()" class="link-btn">Create Account</button>
+                </p>
+            </div>
 
-    async function signup() {
-      const name = document.getElementById('signupName').value;
-      const email = document.getElementById('signupEmail').value;
-      const password = document.getElementById('signupPassword').value;
-      
-      const res = await fetch(`${API_URL}/api/auth/register`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, email, password })
-      });
-      
-      const data = await res.json();
-      if (res.ok) {
-        localStorage.setItem('token', data.token);
-        localStorage.setItem('user', JSON.stringify(data.user));
-        window.location.href = '/dashboard.html';
-      } else {
-        alert(data.message);
-      }
-    }
+            <!-- Signup Form -->
+            <div id="signupForm" class="auth-form" style="display: none;">
+                <div class="input-group-glass">
+                    <i class="fas fa-user"></i>
+                    <input type="text" id="signupName" placeholder="Full name">
+                </div>
+                <div class="input-group-glass">
+                    <i class="fas fa-envelope"></i>
+                    <input type="email" id="signupEmail" placeholder="Email address">
+                </div>
+                <div class="input-group-glass">
+                    <i class="fas fa-lock"></i>
+                    <input type="password" id="signupPassword" placeholder="Password (min 6 characters)">
+                </div>
+                <button class="btn-primary" onclick="handleSignup()">
+                    <i class="fas fa-user-plus"></i>
+                    <span>Sign Up</span>
+                </button>
+                <p class="auth-switch">
+                    Already have an account?
+                    <button onclick="showLogin()" class="link-btn">Login</button>
+                </p>
+            </div>
+        </div>
+    </div>
 
-    function showSignup() {
-      document.getElementById('loginForm').style.display = 'none';
-      document.getElementById('signupForm').style.display = 'block';
-    }
-
-    function showLogin() {
-      document.getElementById('signupForm').style.display = 'none';
-      document.getElementById('loginForm').style.display = 'block';
-    }
-  </script>
+    <script src="script.js"></script>
 </body>
 </html>
