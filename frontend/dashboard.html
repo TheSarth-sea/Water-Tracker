@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard - Smart Water Tracker</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+</head>
+<body class="bg-gradient-to-br from-blue-50 to-cyan-50">
+  <div class="container mx-auto px-4 py-8">
+    <div class="bg-white rounded-xl shadow-lg p-6 mb-6">
+      <div class="flex justify-between items-center">
+        <h1 class="text-2xl font-bold text-gray-800">Smart Water Tracker</h1>
+        <button onclick="logout()" class="bg-red-500 text-white px-4 py-2 rounded-lg">Logout</button>
+      </div>
+    </div>
+
+    <div class="grid md:grid-cols-3 gap-6 mb-6">
+      <div class="bg-white rounded-xl shadow-lg p-6">
+        <h3 class="text-gray-500">Today's Water</h3>
+        <p id="todayTotal" class="text-3xl font-bold text-blue-600">0 L</p>
+        <div class="mt-2">
+          <div class="bg-gray-200 rounded-full h-2">
+            <div id="progressBar" class="bg-blue-600 h-2 rounded-full" style="width:0%"></div>
+          </div>
+        </div>
+      </div>
+      <div class="bg-white rounded-xl shadow-lg p-6">
+        <h3 class="text-gray-500">Weekly Average</h3>
+        <p id="weeklyAvg" class="text-3xl font-bold text-green-600">0 L</p>
+      </div>
+      <div class="bg-white rounded-xl shadow-lg p-6">
+        <h3 class="text-gray-500">Daily Goal</h3>
+        <p id="dailyLimit" class="text-3xl font-bold text-purple-600">0 L</p>
+      </div>
+    </div>
+
+    <div class="bg-white rounded-xl shadow-lg p-6 mb-6">
+      <h2 class="text-xl font-bold mb-4">Add Water Entry</h2>
+      <div class="flex gap-4">
+        <input type="number" id="amount" placeholder="Liters" class="flex-1 p-3 border rounded-lg">
+        <button onclick="addEntry()" class="bg-blue-600 text-white px-6 py-3 rounded-lg">Add</button>
+      </div>
+    </div>
+
+    <div class="grid md:grid-cols-2 gap-6 mb-6">
+      <div class="bg-white rounded-xl shadow-lg p-6">
+        <canvas id="weeklyChart"></canvas>
+      </div>
+      <div class="bg-white rounded-xl shadow-lg p-6">
+        <canvas id="monthlyChart"></canvas>
+      </div>
+    </div>
+
+    <div class="bg-white rounded-xl shadow-lg p-6">
+      <h2 class="text-xl font-bold mb-4">History</h2>
+      <div id="history" class="space-y-2"></div>
+    </div>
+  </div>
+
+  <script>
+    const API_URL = window.location.origin;
+    const token = localStorage.getItem('token');
+    if (!token) window.location.href = '/';
+
+    let currentUser = null;
+    let entries = [];
+
+    async function loadData() {
+      try {
+        // Load user
+        const userRes = await fetch(`${API_URL}/api/auth/me`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (userRes.ok) currentUser = await userRes.json();
+        else throw new Error('Auth failed');
+
+        // Load entries
+        const entriesRes = await fetch(`${API_URL}/api/water`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await entriesRes.json();
+        if (entriesRes.ok) entries = data.entries;
+        
+        updateDashboard();
+      } catch (err) {
+        console.error(err);
+        localStorage.clear();
+        window.location.href = '/';
+      }
+    }
+
+    function updateDashboard() {
+      const today = new Date().toISOString().split('T')[0];
+      const todayTotal = entries.filter(e => e.date.split('T')[0] === today)
+        .reduce((s, e) => s + e.amount, 0);
+      
+      document.getElementById('todayTotal').innerHTML = `${todayTotal.toFixed(1)} L`;
+      document.getElementById('dailyLimit').innerHTML = `${currentUser.dailyLimit} L`;
+      
+      const percent = Math.min(100, (todayTotal / currentUser.dailyLimit) * 100);
+      document.getElementById('progressBar').style.width = `${percent}%`;
+      
+      // Weekly average
+      const weeklyData = Array(7).fill(0);
+      entries.forEach(e => {
+        const date = new Date(e.date);
+        const day = date.getDay();
+        weeklyData[day] += e.amount;
+      });
+      const avg = weeklyData.reduce((a,b)=>a+b,0)/7;
+      document.getElementById('weeklyAvg').innerHTML = `${avg.toFixed(1)} L`;
+      
+      // Update charts
+      updateCharts(weeklyData);
+      
+      // Update history
+      const historyDiv = document.getElementById('history');
+      historyDiv.innerHTML = entries.slice(-10).reverse().map(e => `
+        <div class="flex justify-between items-center p-3 border rounded">
+          <span>${new Date(e.date).toLocaleDateString()}</span>
+          <span class="font-bold">${e.amount} L</span>
+          <button onclick="deleteEntry('${e._id}')" class="text-red-500">Delete</button>
+        </div>
+      `).join('');
+    }
+
+    let weeklyChart, monthlyChart;
+    function updateCharts(weeklyData) {
+      if (weeklyChart) weeklyChart.destroy();
+      weeklyChart = new Chart(document.getElementById('weeklyChart'), {
+        type: 'bar',
+        data: {
+          labels: ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'],
+          datasets: [{ label: 'Liters', data: weeklyData, backgroundColor: '#3b82f6' }]
+        }
+      });
+      
+      const monthlyData = Array(30).fill(0);
+      entries.forEach(e => {
+        const date = new Date(e.date);
+        if (date.getMonth() === new Date().getMonth()) {
+          monthlyData[date.getDate()-1] += e.amount;
+        }
+      });
+      
+      if (monthlyChart) monthlyChart.destroy();
+      monthlyChart = new Chart(document.getElementById('monthlyChart'), {
+        type: 'line',
+        data: {
+          labels: Array.from({length:30}, (_,i)=>i+1),
+          datasets: [{ label: 'Liters', data: monthlyData, borderColor: '#06b6d4', tension: 0.4 }]
+        }
+      });
+    }
+
+    async function addEntry() {
+      const amount = parseFloat(document.getElementById('amount').value);
+      if (!amount || amount <= 0) return alert('Enter valid amount');
+      
+      const res = await fetch(`${API_URL}/api/water`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ amount, date: new Date().toISOString() })
+      });
+      
+      if (res.ok) {
+        document.getElementById('amount').value = '';
+        await loadData();
+      } else {
+        alert('Error adding entry');
+      }
+    }
+
+    async function deleteEntry(id) {
+      if (!confirm('Delete this entry?')) return;
+      
+      const res = await fetch(`${API_URL}/api/water/${id}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      
+      if (res.ok) await loadData();
+    }
+
+    function logout() {
+      localStorage.clear();
+      window.location.href = '/';
+    }
+
+    loadData();
+  </script>
+</body>
+</html>
